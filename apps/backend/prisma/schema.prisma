@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  SDR
+}
+
+enum LeadStage {
+  NOVO
+  PRE_QUALIFICADO
+  DESQUALIFICADO
+  CONTATO_INICIADO
+  REUNIAO_AGENDADA
+  PROPOSTA_ENVIADA
+  GANHO
+  PERDIDO
+}
+
+enum LeadPriority {
+  ALTA
+  EM_DESENVOLVIMENTO
+  BAIXA_PRONTIDAO
+  INCOMPLETA
+}
+
+enum MeetingCondition {
+  ATENDIDAS
+  RESOLVER_CRITERIOS_MINIMOS
+  CONCLUIR_NOTAS
+}
+
+enum ForwardingAction {
+  AGENDAR_CLOSER
+  COMBINAR_RETORNO
+  REVISAR_NOTAS
+  PREENCHER_FICHA
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model User {
+  id           String         @id @default(uuid())
+  name         String
+  email        String         @unique
+  passwordHash String
+  role         UserRole       @default(SDR)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  leads        Lead[]         @relation("SdrLeads")
+  followUps    LeadFollowUp[]
+
+  @@map("users")
+}
+
+model Lead {
+  id                  String              @id @default(uuid())
+  nome                String
+  whatsapp            String
+  deliveryNome        String
+  segmento            String
+  cidade              String
+  stage               LeadStage           @default(NOVO)
+  origem              String              @default("LANDING_PAGE")
+  
+  // Status de notificação no grupo WhatsApp via Evolution API
+  notificationStatus  NotificationStatus  @default(PENDING)
+  notificationError   String?
+
+  // Dados de Contexto SDR / Negócio
+  instagramCardapio   String?
+  faturamentoMensal   Float?
+  pedidosMensais      Int?
+  ticketMedio         Float?
+  midiaAtualMensal    Float?
+  canalEntrada        String?             @default("Landing Page")
+  decisoresCargos     String?
+  prazoDesejadoInicio String?
+  problemaPrincipal   String?
+  metaCliente         String?
+  historicoAgencias   String?
+  recursosDeclarados  String?
+
+  sdrResponsibleId    String?
+  sdrResponsible      User?               @relation("SdrLeads", fields: [sdrResponsibleId], references: [id], onDelete: SetNull)
+
+  qualification       LeadQualification?
+  followUps           LeadFollowUp[]
+
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@map("leads")
+}
+
+model LeadQualification {
+  id                          String           @id @default(uuid())
+  leadId                      String           @unique
+  lead                        Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  // 6 Critérios Oficiais (0 a 3, null = pendente)
+  scorePerfil                 Int?
+  justificativaPerfil         String?
+
+  scoreCapacidadeOperacional  Int?
+  justificativaOperacional    String?
+
+  scoreNecessidadeObjetivo    Int?
+  justificativaNecessidade    String?
+
+  scoreCapacidadeInvestir     Int?
+  justificativaInvestir       String?
+
+  scoreAcessoDecisor          Int?
+  justificativaDecisor        String?
+
+  scoreMomentoContratacao     Int?
+  justificativaMomento        String?
+
+  // Resultados Computados
+  totalScore                  Int?
+  priority                    LeadPriority     @default(INCOMPLETA)
+  meetingCondition            MeetingCondition @default(CONCLUIR_NOTAS)
+  forwardingAction            ForwardingAction @default(PREENCHER_FICHA)
+
+  // Próximos passos e pendências
+  pendenciasCloser            String?
+  proximaAcao                 String?
+  dataProximoContato          DateTime?
+  motivoPerda                 String?
+
+  createdAt                   DateTime         @default(now())
+  updatedAt                   DateTime         @updatedAt
+
+  @@map("lead_qualifications")
+}
+
+model LeadFollowUp {
+  id          String    @id @default(uuid())
+  leadId      String
+  lead        Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  notes       String
+  scheduledAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@map("lead_follow_ups")
+}

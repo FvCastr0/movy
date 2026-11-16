@@ -89,30 +89,27 @@ function initPhoneMask() {
 }
 
 /* ==========================================================================
-   3. VALIDAÇÃO & MOTOR DE QUALIFICAÇÃO SDR (LEAD SCORING)
+   3. VALIDAÇÃO & ENVIO DO FORMULÁRIO DE LEADS (INTEGRAÇÃO API MOVY)
    ========================================================================== */
 function initLeadForm() {
   const form = document.getElementById('leadForm');
   const submitBtn = document.getElementById('submitBtn');
+  const formWrapper = document.querySelector('.form-wrapper');
   if (!form) return;
+
+  const API_ENDPOINT = 'http://localhost:3001/api/leads/capture';
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // Limpa erros anteriores
     clearErrors();
 
-    // Validação dos campos obrigatórios (resiliente para formulários enxutos ou completos)
     const formData = {
-      nome: form.nome.value.trim(),
-      whatsapp: form.whatsapp.value.trim(),
-      deliveryNome: form.deliveryNome.value.trim(),
-      segmento: form.segmento.value,
-      cidade: form.cidade.value.trim(),
-      linkDigital: form.linkDigital.value.trim(),
-      canalPrincipal: form.canalPrincipal ? form.canalPrincipal.value : 'Cardápio próprio',
-      capacidade: form.capacidade ? form.capacidade.value : 'Sim, estamos prontos',
-      verba: form.verba ? form.verba.value : 'Sim, tenho verba disponível'
+      nome: form.nome ? form.nome.value.trim() : '',
+      whatsapp: form.whatsapp ? form.whatsapp.value.trim() : '',
+      deliveryNome: form.deliveryNome ? form.deliveryNome.value.trim() : '',
+      segmento: form.segmento ? form.segmento.value : '',
+      cidade: form.cidade ? form.cidade.value.trim() : '',
     };
 
     let hasError = false;
@@ -124,7 +121,7 @@ function initLeadForm() {
 
     const cleanPhone = formData.whatsapp.replace(/\D/g, '');
     if (cleanPhone.length < 10 || cleanPhone.length > 11) {
-      showError('whatsapp', 'Informe um WhatsApp válido com DDD (Ex: 11 99999-9999).');
+      showError('whatsapp', 'Informe um WhatsApp válido com DDD (Ex: (11) 99999-9999).');
       hasError = true;
     }
 
@@ -139,27 +136,7 @@ function initLeadForm() {
     }
 
     if (!formData.cidade) {
-      showError('cidade', 'Informe a cidade e estado.');
-      hasError = true;
-    }
-
-    if (!formData.linkDigital) {
-      showError('linkDigital', 'Informe seu Instagram ou link do cardápio/iFood.');
-      hasError = true;
-    }
-
-    if (form.canalPrincipal && !formData.canalPrincipal) {
-      showError('canalPrincipal', 'Selecione o canal principal de pedidos atual.');
-      hasError = true;
-    }
-
-    if (form.capacidade && !formData.capacidade) {
-      showError('capacidade', 'Informe se sua cozinha suporta aumento de demanda.');
-      hasError = true;
-    }
-
-    if (form.verba && !formData.verba) {
-      showError('verba', 'Informe a sua disponibilidade de verba.');
+      showError('cidade', 'Informe a sua cidade e estado (Ex: Campinas / SP).');
       hasError = true;
     }
 
@@ -171,58 +148,69 @@ function initLeadForm() {
       return;
     }
 
-    // Desativa botão para evitar envios duplicados
+    // Desativa botão e sinaliza envio
+    const originalBtnHtml = submitBtn.innerHTML;
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span>Processando Análise...</span>';
+    submitBtn.innerHTML = '<span>Enviando dados...</span>';
 
-    // Cálculo do Lead Scoring (Diretrizes SDR dos manuais Movy)
-    const scoreResult = calculateLeadScore(formData);
-    const enrichedLead = {
-      ...formData,
-      score: scoreResult.score,
-      tier: scoreResult.tier,
-      isQualified: scoreResult.isQualified,
-      timestamp: new Date().toISOString()
-    };
-
-    // Disparo condicional do Pixel da Meta (Apenas leads com critério mínimo)
-    if (enrichedLead.isQualified && typeof fbq === 'function') {
-      try {
-        fbq('track', 'Lead', {
-          content_name: 'Diagnostico Delivery',
-          content_category: enrichedLead.segmento,
-          value: enrichedLead.score,
-          currency: 'BRL'
-        });
-      } catch (err) {
-        console.warn('Erro ao disparar Meta Pixel:', err);
-      }
-    }
-
-    // Salva no sessionStorage para popular a página de obrigado
     try {
-      sessionStorage.setItem('movy_lead_data', JSON.stringify(enrichedLead));
-    } catch (e) {
-      console.warn('SessionStorage indisponível:', e);
-    }
+      const response = await fetch(API_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
 
-    // Placeholder para Webhook externo (n8n, CRM, etc.)
-    // Se desejar plugar um webhook real, configure a URL abaixo:
-    const WEBHOOK_URL = ''; // Ex: 'https://seu-n8n.com/webhook/movy-lead'
-    if (WEBHOOK_URL) {
-      try {
-        await fetch(WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(enrichedLead)
-        });
-      } catch (err) {
-        console.warn('Falha no envio do webhook:', err);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const message = Array.isArray(errorData.message)
+          ? errorData.message.join(', ')
+          : errorData.message || 'Falha ao processar formulário.';
+        throw new Error(message);
       }
-    }
 
-    // Redireciona para a página de agradecimento
-    window.location.href = 'obrigado.html';
+      // Disparo do Pixel da Meta se configurado
+      if (typeof fbq === 'function') {
+        try {
+          fbq('track', 'Lead', {
+            content_name: 'Diagnostico Delivery',
+            content_category: formData.segmento,
+            currency: 'BRL',
+          });
+        } catch (pixelErr) {
+          console.warn('Erro ao disparar Meta Pixel:', pixelErr);
+        }
+      }
+
+      // Feedback visual de sucesso premium sem quebrar em página 404
+      if (formWrapper) {
+        formWrapper.innerHTML = `
+          <div style="text-align: center; padding: 2.5rem 1rem;">
+            <div style="width: 64px; height: 64px; margin: 0 auto 1.5rem; background: rgba(229, 9, 20, 0.15); border: 2px solid #E50914; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#E50914" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.75rem; color: #fff;">
+              Diagnóstico Solicitado com Sucesso!
+            </h3>
+            <p style="color: #A3A3A3; line-height: 1.6; font-size: 1rem; margin-bottom: 1.5rem;">
+              Recebemos as informações de <strong>${formData.deliveryNome}</strong>.<br>
+              Nosso time de assessoria já foi notificado e entrará em contato via WhatsApp no número <strong>${formData.whatsapp}</strong>.
+            </p>
+            <div style="display: inline-block; padding: 0.75rem 1.25rem; background: #171717; border: 1px solid #262626; border-radius: 8px; color: #737373; font-size: 0.875rem;">
+              ⏱️ Tempo médio de retorno: até 30 minutos em horário comercial
+            </div>
+          </div>
+        `;
+      }
+    } catch (err) {
+      console.error('Erro na submissão do lead:', err);
+      alert('Não foi possível enviar seus dados no momento. Verifique sua conexão e tente novamente.');
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalBtnHtml;
+    }
   });
 }
 
