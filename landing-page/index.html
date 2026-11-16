@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Movy | Assessoria Especializada em Delivery</title>
+  <meta name="description"
+    content="Mais pedidos no seu delivery todos os dias com o método testado na nossa própria operação. Gestão de anúncios, redes sociais e cardápio digital.">
+
+  <!-- Preconnect para otimização de fontes nativas/modernas -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Meta Pixel Code Placeholder (Pronto para ID de Produção) -->
+  <script>
+    // Configuração do Pixel da Meta (Substitua 'SEU_PIXEL_ID' pelo ID real)
+    !function (f, b, e, v, n, t, s) {
+      if (f.fbq) return; n = f.fbq = function () {
+        n.callMethod ?
+          n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+      };
+      if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+      n.queue = []; t = b.createElement(e); t.async = !0;
+      t.src = v; s = b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t, s)
+    }(window, document, 'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+    // fbq('init', 'SEU_PIXEL_ID');
+    // fbq('track', 'PageView');
+  </script>
+</head>
+
+<body>
+
+  <!-- Barra de Topo / Header Fixo -->
+  <header class="header">
+    <div class="container header-container">
+      <div class="brand">
+        <a href="#" class="logo-link" aria-label="Movy Delivery Marketing">
+          <span class="logo-text">MOVY<span class="logo-dot">.</span></span>
+        </a>
+      </div>
+      <nav class="nav">
+        <a href="#solucoes" class="nav-link">Soluções</a>
+        <a href="#metodo" class="nav-link">O Método</a>
+        <a href="#case" class="nav-link">Nossa Operação</a>
+        <a href="#faq" class="nav-link">Dúvidas</a>
+        <a href="#formulario" class="btn btn-sm btn-primary">Fale com a gente</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- SEÇÃO 1: HERO (Dobra Principal com Captura Direta) -->
+    <section class="hero-section" id="hero">
+      <div class="container hero-container">
+        <div class="hero-alignment">
+
+          <!-- Coluna da Esquerda: Proposta de Valor e Autoridade -->
+          <div class="hero-content">
+
+            <h1 class="hero-title">
+              Transforme o seu delivery em uma máquina previsível de lucro e <span class="text-highlight">feche o ano
+                com
+                recorde de
+                pedidos</span>
+            </h1>
+
+            <p class="hero-subtitle">
+              Assumimos a atração de clientes e a inteligência comercial do seu delivery para transformar dias parados
+              em pedidos recorrentes com margem cheia.
+            </p>
+
+            <!-- Diferenciais e Quebra de Fricção Imediata -->
+            <div class="hero-trust-list">
+              <div class="trust-item">
+                <svg class="trust-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>Estratégia desenhada para encher o cardápio próprio e reduzir taxas de marketplace.</span>
+              </div>
+              <div class="trust-item">
+                <svg class="trust-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>Da configuração dos anúncios à otimização da sua vitrine e
+                  reativação de clientes.</span>
+              </div>
+              <div class="trust-item">
+                <svg class="trust-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>Validado diariamente na nossa própria pizzaria,
+                  hamburgueria e esfiharia.</span>
+              </div>
+            </div>
+
+            <!-- Destaques Rápidos de Credibilidade -->
+            <div class="hero-stats-strip">
+              <div class="stat-item">
+                <span class="stat-number">+3</span>
+                <span class="stat-label">Operações próprias</span>
+              </div>
+              <div class="stat-divider"></div>
+              <div class="stat-item">
+                <span class="stat-number">100%</span>
+                <span class="stat-label">Contas em seu nome</span>
+              </div>
+              <div class="stat-divider"></div>
+              <div class="stat-item">
+                <span class="stat-number">0</span>
+                <span class="stat-label">Promessas mirabolantes</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Coluna da Direita: Card de Diagnóstico e Captura -->
+          <div class="hero-form-container" id="formulario">
+            <div class="form-wrapper">
+              <div class="form-header">
+                <h2 class="form-title">Entre em contato</h2>
+                <p class="form-subtitle">
+                  Preencha o formulário para entrarmos em contato com você.
+                </p>
+              </div>
+
+              <form id="leadForm" class="lead-form" novalidate>
+                <!-- Linha 1: Dados Pessoais -->
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="nome" class="form-label">Nome Completo <span class="required">*</span></label>
+                    <input type="text" id="nome" name="nome" class="form-input" placeholder="Ex: Carlos Silva" required>
+                    <span class="field-error" id="error-nome"></span>
+                  </div>
+                  <div class="form-group">
+                    <label for="whatsapp" class="form-label">WhatsApp com DDD <span class="required">*</span></label>
+                    <input type="tel" id="whatsapp" name="whatsapp" class="form-input" placeholder="(11) 99999-9999"
+                      required maxlength="15">
+                    <span class="field-error" id="error-whatsapp"></span>
+                  </div>
+                </div>
+
+                <!-- Linha 2: Dados do Negócio -->
+                <div class="form-group">
+                  <label for="deliveryNome" class="form-label">Nome do Delivery <span class="required">*</span></label>
+                  <input type="text" id="deliveryNome" name="deliveryNome" class="form-input"
+                    placeholder="Ex: Fornalha Pizzaria" required>
+                  <span class="field-error" id="error-deliveryNome"></span>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="segmento" class="form-label">Segmento <span class="required">*</span></label>
+                    <select id="segmento" name="segmento" class="form-select" required>
+                      <option value="" disabled selected>Selecione seu nicho</option>
+                      <option value="Pizzaria">Pizzaria</option>
+                      <option value="Hamburgueria">Hamburgueria</option>
+                      <option value="Esfiharia">Esfiharia</option>
+                      <option value="Comida Japonesa / Sushi">Comida Japonesa / Sushi</option>
+                      <option value="Marmitaria / Refeições">Marmitaria / Refeições</option>
+                      <option value="Açaí & Sobremesas">Açaí & Sobremesas</option>
+                      <option value="Restaurante Geral">Restaurante Geral</option>
+                      <option value="Outro">Outro nicho de alimentação</option>
+                    </select>
+                    <span class="field-error" id="error-segmento"></span>
+                  </div>
+                  <div class="form-group">
+                    <label for="cidade" class="form-label">Cidade / Estado <span class="required">*</span></label>
+                    <input type="text" id="cidade" name="cidade" class="form-input" placeholder="Ex: Campinas / SP"
+                      required>
+                    <span class="field-error" id="error-cidade"></span>
+                  </div>
+                </div>
+
+                <div class="form-submit-container">
+                  <button type="submit" id="submitBtn" class="btn btn-primary btn-lg btn-block">
+                    <span>Quero receber meu diagnóstico</span>
+                    <svg class="icon-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                      <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- SEÇÃO 2: IDENTIFICAÇÃO COM A OPERAÇÃO (O Problema) -->
+    <section class="section problem-section" id="problemas">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">Diagnóstico de Gargalos</span>
+          <h2 class="section-title">
+            Você tem um produto excelente, mas o movimento não acompanha o potencial da sua cozinha?
+          </h2>
+          <p class="section-desc">
+            Quem opera no balcão conhece o peso da rotina. Identificamos com precisão os 4 principais nós que sufocam a
+            margem do delivery:
+          </p>
+        </div>
+
+        <div class="grid grid-2">
+          <!-- Card 1 -->
+          <div class="card card-problem">
+            <div class="card-icon-wrapper">
+              <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </div>
+            <h3 class="card-title">Cozinha parada no meio da semana</h3>
+            <p class="card-text">
+              Sexta e sábado vendem bem, mas segunda a quarta mal pagam o custo fixo. Uma operação ociosa queima margem
+              com equipe e aluguel parados.
+            </p>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="card card-problem">
+            <div class="card-icon-wrapper">
+              <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+            </div>
+            <h3 class="card-title">Refém das taxas dos aplicativos</h3>
+            <p class="card-text">
+              Boa parte da sua margem fica presa em comissões abusivas e você não tem controle algum sobre a base de
+              dados dos seus clientes para gerar recompra.
+            </p>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="card card-problem">
+            <div class="card-icon-wrapper">
+              <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
+            <h3 class="card-title">Falta de tempo para tocar o marketing</h3>
+            <p class="card-text">
+              Você precisa cuidar de compras, equipe, cozinha e entrega, deixando o Instagram parado, o iFood
+              desatualizado e os anúncios no amadorismo.
+            </p>
+          </div>
+        </div>
+      </div>
+      </div>
+    </section>
+
+    <!-- SEÇÃO 3: A AUTORIDADE REAL (O Case dos Fundadores) -->
+    <section class="section authority-section" id="case">
+      <div class="container">
+        <div class="authority-grid">
+          <div class="authority-text-col">
+            <span class="section-tag">Validação na Prática</span>
+            <h2 class="section-title">
+              Não somos uma agência de teoria. Nós vivemos o balcão todos os dias.
+            </h2>
+            <div class="authority-body">
+              <p>
+                A Movy nasceu dentro da operação. Antes de atender outros deliveries, validamos nossas estratégias de
+                Meta Ads, Google Ads, redes sociais e canais de venda na nossa própria rede de <strong>pizzaria,
+                  hamburgueria e esfiharia</strong>.
+              </p>
+              <p>
+                Sabemos exatamente o que acontece quando o pedido atrasa, quando a margem aperta e o que realmente faz o
+                cliente pedir de novo. Não aplicamos fórmulas de livro didático: aplicamos o que sustenta nosso próprio
+                negócio.
+              </p>
+            </div>
+
+            <div class="authority-highlights">
+              <div class="highlight-check">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E50914" stroke-width="3"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>Sentimos no bolso o custo da matéria-prima e embalagem</span>
+              </div>
+              <div class="highlight-check">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E50914" stroke-width="3"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>Foco em raio de entrega quente e volume de pedidos reais</span>
+              </div>
+              <div class="highlight-check">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E50914" stroke-width="3"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>Métricas de vendas no caixa, não métricas de vaidade</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="authority-card-col">
+            <!-- Bloco de Prova Estruturado -->
+            <div class="case-card">
+              <div class="case-card-header">
+                <div class="case-badge">Raio-X de Operação Própria</div>
+                <div class="case-status-indicator">
+                  <span class="live-dot"></span>
+                  <span>Ambiente Validado</span>
+                </div>
+              </div>
+
+              <div class="case-details">
+                <div class="case-row">
+                  <span class="case-label">Operação:</span>
+                  <span class="case-val">Rede Match — Pizzaria | Hamburgueria | Esfiharia</span>
+                </div>
+                <div class="case-row">
+                  <span class="case-label">Estratégia Aplicada:</span>
+                  <span class="case-val">Meta Ads + Google Ads + Otimização de Vitrine e Criativos Próprios</span>
+                </div>
+              </div>
+
+              <div class="case-metrics-grid">
+                <div class="metric-box">
+                  <span class="metric-title">Investimento em Mídia</span>
+                  <span class="metric-value">R$ [VALOR]</span>
+                  <span class="metric-sub">Meta + Google Ads</span>
+                </div>
+                <div class="metric-box">
+                  <span class="metric-title">Pedidos Atribuídos</span>
+                  <span class="metric-value highlight">[QTD] pedidos</span>
+                  <span class="metric-sub">Cardápio próprio & WhatsApp</span>
+                </div>
+                <div class="metric-box">
+                  <span class="metric-title">Receita Atribuída</span>
+                  <span class="metric-value">R$ [VALOR]</span>
+                  <span class="metric-sub">Faturamento direto gerado</span>
+                </div>
+                <div class="metric-box">
+                  <span class="metric-title">ROAS / Custo por Pedido</span>
+                  <span class="metric-value">[X,XX]x / R$ [VALOR]</span>
+                  <span class="metric-sub">Retorno sobre investimento</span>
+                </div>
+              </div>
+
+              <div class="case-footer">
+                <small>* Dados extraídos e auditados diretamente no Gerenciador de Negócios e sistema de PDV.</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SEÇÃO 4: O QUE FAZEMOS (Ecossistema Integrado de Vendas) -->
+    <section class="section solutions-section" id="solucoes">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="section-tag">Ecossistema Integrado Movy</span>
+          <h2 class="section-title">
+            Quatro frentes conectadas trabalhando para a sua cozinha
+          </h2>
+          <p class="section-desc max-w-700 mx-auto">
+            Não fazemos ações isoladas. Conectamos atração, desejo, busca e conversão em uma engrenagem contínua para
+            encher o seu caixa.
+          </p>
+        </div>
+
+        <div class="ecosystem-container">
+          <!-- Hub Central de Conversão -->
+
+        </div>
+
+        <!-- Grade dos 4 Pilares Interligados -->
+        <div class="ecosystem-grid">
+
+          <!-- Pilar 1: Meta Ads -->
+          <div class="ecosystem-node node-meta">
+            <div class="node-header">
+              <div class="node-logo-badge logo-meta">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="#0081FB">
+                  <path
+                    d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.99 22 12c0-5.523-4.477-10-10-10z" />
+                </svg>
+              </div>
+              <span class="node-tag">Atração no Raio Quente</span>
+            </div>
+            <h3 class="node-title">Meta Ads para Delivery</h3>
+            <p class="node-text">
+              Anúncios no Instagram e Facebook veiculados estritamente no raio de entrega e nos horários de pico.
+            </p>
+            <div class="node-flow-indicator">
+              <span>Alimenta o Cardápio & WhatsApp</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Pilar 2: Google Ads -->
+          <div class="ecosystem-node node-google">
+            <div class="node-header">
+              <div class="node-logo-badge logo-google">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    fill="#4285F4" />
+                  <path
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    fill="#34A853" />
+                  <path
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                    fill="#FBBC05" />
+                  <path
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                    fill="#EA4335" />
+                </svg>
+              </div>
+              <span class="node-tag">Busca com Fome Imediata</span>
+            </div>
+            <h3 class="node-title">Google Ads Local</h3>
+            <p class="node-text">
+              Captura quem já está pesquisando por comida na sua região ("pizzaria perto de mim", hambúrguer).
+            </p>
+            <div class="node-flow-indicator">
+              <span>Converte o cliente na intenção</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Pilar 3: Cardápio Digital & iFood -->
+          <div class="ecosystem-node node-ifood">
+            <div class="node-header">
+              <div class="node-logo-badge logo-ifood">
+                <svg width="28" height="20" viewBox="0 0 40 28" fill="#EA1D2C">
+                  <path
+                    d="M11.5 5.5C11.5 2.5 9 0 6 0S0.5 2.5 0.5 5.5c0 2.4 1.5 4.4 3.7 5.1L0 28h8.5l-3.3-17.4c2.6-.7 6.3-2.5 6.3-5.1zm21 0c0-3-2.5-5.5-5.5-5.5s-5.5 2.5-5.5 5.5c0 2.6 3.7 4.4 6.3 5.1L24.5 28H33l-4.2-17.4c2.2-.7 3.7-2.7 3.7-5.1z" />
+                </svg>
+              </div>
+              <span class="node-tag">Conversão & Mais Margem</span>
+            </div>
+            <h3 class="node-title">Cardápio Digital & Inteligência iFood</h3>
+            <p class="node-text">
+              Engenharia de cardápio e otimização de vitrine para converter pedidos com taxas menores.
+            </p>
+            <div class="node-flow-indicator">
+              <span>Protege o lucro do seu caixa</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Pilar 4: Gestão de Redes Sociais -->
+          <div class="ecosystem-node node-social">
+            <div class="node-header">
+              <div class="node-logo-badge logo-social">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E50914" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                </svg>
+              </div>
+              <span class="node-tag">Desejo Visual & Vídeos</span>
+            </div>
+            <h3 class="node-title">Gestão de Redes Sociais que Dão Fome</h3>
+            <p class="node-text">
+              Vídeos simples gravados pelo celular transformados em anúncios de queijo derretido e prato quente.
+            </p>
+            <div class="node-flow-indicator">
+              <span>Gera os criativos que vendem</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      </div>
+    </section>
+
+    <!-- SEÇÃO 5: COMO FUNCIONA NA PRÁTICA (Quebra de Atrito) -->
+    <section class="section steps-section" id="metodo">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="section-tag">Fluxo Ágil & Sem Burocracia</span>
+          <h2 class="section-title">
+            Processo simples, seguro e sem travar a sua rotina
+          </h2>
+          <p class="section-desc max-w-700 mx-auto">
+            Sabemos que você já está sobrecarregado no comando da operação. Nossa assessoria foi projetada para exigir o
+            mínimo do seu tempo.
+          </p>
+        </div>
+
+        <div class="steps-grid">
+          <!-- Passo 1 -->
+          <div class="step-card">
+            <div class="step-badge">Etapa 1</div>
+            <div class="step-icon-wrap">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#E50914" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+            <h3 class="step-title">Conexão Segura (Sem Senha)</h3>
+            <p class="step-text">
+              Você continua 100% dono das suas contas. Conectamos via acesso oficial de parceiro corporativo da Meta e
+              Google, sem nunca solicitar senhas pessoais ou transferir propriedade.
+            </p>
+          </div>
+
+          <!-- Passo 2 -->
+          <div class="step-card">
+            <div class="step-badge">Etapa 2</div>
+            <div class="step-icon-wrap">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#E50914" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+              </svg>
+            </div>
+            <h3 class="step-title">Gravação Guiada pelo Celular</h3>
+            <p class="step-text">
+              Não precisa contratar produtora. Enviamos uma lista rápida de cenas (prato pronto, montagem, embalagem)
+              para você gravar no celular em 10 minutos, e nossa equipe edita e coloca locução.
+            </p>
+          </div>
+
+          <!-- Passo 3 -->
+          <div class="step-card">
+            <div class="step-badge">Etapa 3</div>
+            <div class="step-icon-wrap">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#E50914" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+            </div>
+            <h3 class="step-title">Acompanhamento Semanal Transparente</h3>
+            <p class="step-text">
+              Toda segunda-feira você recebe no WhatsApp um relatório claro com valor investido, pedidos atribuídos,
+              custo por pedido e os próximos testes, falando a língua de margem de entrega.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- SEÇÃO 7: PERGUNTAS FREQUENTES (FAQ) -->
+    <section class="section faq-section" id="faq">
+      <div class="container max-w-800">
+        <div class="section-header text-center">
+          <span class="section-tag">Perguntas Frequentes</span>
+          <h2 class="section-title">Respostas diretas, sem meias palavras</h2>
+          <p class="section-desc">
+            Transparência total desde o primeiro contato com o seu negócio.
+          </p>
+        </div>
+
+        <div class="faq-accordion">
+          <!-- FAQ 1 -->
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">
+              <span>Vocês atendem qualquer tipo de delivery?</span>
+              <span class="faq-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </span>
+            </button>
+            <div class="faq-answer">
+              <p>
+                Sim. Nossa metodologia foi validada na nossa própria rede (pizzaria, hamburgueria e esfiharia) e se
+                adapta a qualquer operação de alimentação com entrega (comida japonesa, marmitarias, açaí, docerias e
+                restaurantes em geral).
+              </p>
+            </div>
+          </div>
+
+          <!-- FAQ 2 -->
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">
+              <span>Vocês garantem um número exato de vendas ou faturamento?</span>
+              <span class="faq-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </span>
+            </button>
+            <div class="faq-answer">
+              <p>
+                Não trabalhamos com promessas irreais. O volume de vendas depende da sua região, oferta, preço e
+                capacidade operacional. Nosso compromisso é aplicar o método validado na nossa rede, otimizar
+                semanalmente e entregar relatórios transparentes sobre cada real investido.
+              </p>
+            </div>
+          </div>
+
+          <!-- FAQ 3 -->
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">
+              <span>Preciso contratar alguém para gravar vídeos profissionais?</span>
+              <span class="faq-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </span>
+            </button>
+            <div class="faq-answer">
+              <p>
+                Não. Nós enviamos um roteiro de cenas simples para você gravar com o próprio celular na cozinha ou
+                balcão. A edição, ritmo e locução ficam por conta da Movy.
+              </p>
+            </div>
+          </div>
+
+          <!-- FAQ 4 -->
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">
+              <span>Qual o investimento mínimo em anúncios?</span>
+              <span class="faq-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </span>
+            </button>
+            <div class="faq-answer">
+              <p>
+                Recomendamos uma verba inicial a partir de R$ 1.500/mês paga diretamente às plataformas (Meta/Google),
+                separada do valor da assessoria.
+              </p>
+            </div>
+          </div>
+
+          <!-- FAQ 5 -->
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">
+              <span>Vocês pedem a senha do meu Instagram ou Facebook?</span>
+              <span class="faq-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </span>
+            </button>
+            <div class="faq-answer">
+              <p>
+                Nunca. Toda a configuração é feita via compartilhamento oficial de parceiro dentro do Gerenciador de
+                Negócios da Meta, mantendo total segurança e propriedade dos seus ativos.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Rodapé Institucional -->
+  <footer class="footer">
+    <div class="container footer-container">
+      <div class="footer-left">
+        <div class="logo-text">MOVY<span class="logo-dot">.</span></div>
+        <p class="footer-copy">
+          Assessoria especializada em tráfego pago, redes sociais e inteligência de vendas para operações de delivery.
+        </p>
+      </div>
+      <div class="footer-right">
+        <p class="footer-legal">
+          &copy; 2026 Movy Assessoria de Marketing Digital. Todos os direitos reservados.<br>
+          Operação transparente, segura e focada em resultados reais.
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- GSAP 3 Core Engine -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="script.js"></script>
+</body>
+
+</html>
