@@ -63,6 +63,7 @@ services:
       WHATSAPP_GROUP_JID: ${WHATSAPP_GROUP_JID:-120363413821500503@g.us}
       INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:-admin@movy.com.br}
       INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-movyAdmin2026!}
+      META_ACCESS_TOKEN: ${META_ACCESS_TOKEN:-}
       FRONTEND_URL: http://localhost:3000
     depends_on:
       evolution-postgres:

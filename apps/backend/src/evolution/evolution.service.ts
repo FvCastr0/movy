@@ -71,4 +71,70 @@ export class EvolutionService {
       return { success: false, error: errorMessage };
     }
   }
+
+  /**
+   * Dispara documento PDF e mensagem executiva diretamente para o WhatsApp do cliente.
+   */
+  async sendReportPdfMedia(
+    whatsapp: string,
+    pdfBase64OrUrl: string,
+    fileName: string,
+    caption: string,
+  ): Promise<{ success: boolean; error?: string }> {
+    const apiUrl = this.configService.get<string>('EVOLUTION_API_URL', 'http://localhost:8080');
+    const apiKey = this.configService.get<string>('EVOLUTION_API_KEY', 'movy_secret_key_whatsapp_2026');
+    const rawInstance = this.configService.get<string>('EVOLUTION_INSTANCE_NAME', 'bot movy');
+
+    const cleanNumber = whatsapp.replace(/\D/g, '');
+    const recipientNumber = cleanNumber.startsWith('55') ? cleanNumber : `55${cleanNumber}`;
+
+    // Evolution API v2 exige Base64 puro (sem o prefixo Data URI 'data:application/pdf;base64,') ou URL
+    const cleanMedia = pdfBase64OrUrl.replace(/^data:[^;]+;base64,/, '');
+
+    const instanceName = encodeURIComponent(rawInstance);
+    const endpoint = `${apiUrl}/message/sendMedia/${instanceName}`;
+
+    try {
+      this.logger.log(`Enviando relatório em PDF para o cliente no WhatsApp ${recipientNumber}...`);
+
+      const response = await axios.post(
+        endpoint,
+        {
+          number: recipientNumber,
+          mediatype: 'document',
+          mimetype: 'application/pdf',
+          caption,
+          media: cleanMedia,
+          fileName,
+        },
+        {
+          headers: {
+            apikey: apiKey,
+            'Content-Type': 'application/json',
+          },
+          timeout: 20000,
+        },
+      );
+
+      this.logger.log(`PDF enviado com sucesso para ${recipientNumber}. Status: ${response.status}`);
+      return { success: true };
+    } catch (error: any) {
+      const rawData = error.response?.data;
+      let friendlyError = error.message;
+
+      if (rawData) {
+        const msg = rawData?.response?.message;
+        if (Array.isArray(msg) && msg[0]?.exists === false) {
+          friendlyError = `O número ${whatsapp} (${recipientNumber}) não possui conta ativa no WhatsApp. Verifique o telefone do cliente.`;
+        } else if (Array.isArray(msg)) {
+          friendlyError = msg.map((m) => (typeof m === 'string' ? m : JSON.stringify(m))).join(', ');
+        } else {
+          friendlyError = JSON.stringify(rawData);
+        }
+      }
+
+      this.logger.error(`Erro ao enviar mídia PDF via Evolution API: ${friendlyError}`);
+      return { success: false, error: friendlyError };
+    }
+  }
 }

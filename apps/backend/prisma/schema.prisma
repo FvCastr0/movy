@@ -12,13 +12,20 @@ enum UserRole {
   SDR
 }
 
+enum LeadOriginType {
+  INBOUND
+  OUTBOUND
+}
+
 enum LeadStage {
   NOVO
   PRE_QUALIFICADO
   DESQUALIFICADO
   CONTATO_INICIADO
   REUNIAO_AGENDADA
+  NO_SHOW
   PROPOSTA_ENVIADA
+  FECHADO
   GANHO
   PERDIDO
 }
@@ -59,6 +66,7 @@ model User {
   updatedAt    DateTime       @updatedAt
   leads        Lead[]         @relation("SdrLeads")
   followUps    LeadFollowUp[]
+  clients      Client[]       @relation("AccountManagerClients")
 
   @@map("users")
 }
@@ -72,6 +80,12 @@ model Lead {
   cidade              String
   stage               LeadStage           @default(NOVO)
   origem              String              @default("LANDING_PAGE")
+  origemTipo          LeadOriginType      @default(INBOUND)
+  
+  // Dados de Negociação / CRM Comercial
+  dealValue           Float?
+  meetingDate         DateTime?
+  lostReason          String?
   
   // Status de notificação no grupo WhatsApp via Evolution API
   notificationStatus  NotificationStatus  @default(PENDING)
@@ -96,6 +110,7 @@ model Lead {
 
   qualification       LeadQualification?
   followUps           LeadFollowUp[]
+  client              Client?
 
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
@@ -158,3 +173,120 @@ model LeadFollowUp {
 
   @@map("lead_follow_ups")
 }
+
+enum ClientStatus {
+  ATIVO
+  PAUSADO
+  CANCELADO
+}
+
+enum PlanCycle {
+  MENSAL
+  TRIMESTRAL
+}
+
+enum PlanType {
+  TRIMESTRAL_REUNIAO
+  TRIMESTRAL_NORMAL
+  MENSAL_REUNIAO
+  MENSAL_NORMAL
+  PERSONALIZADO
+}
+
+enum PaymentStatus {
+  EM_DIA
+  PENDENTE
+  INADIMPLENTE
+}
+
+model Client {
+  id                   String        @id @default(uuid())
+  nome                 String
+  deliveryNome         String
+  whatsapp             String
+  segmento             String
+  cidade               String
+  status               ClientStatus  @default(ATIVO)
+  
+  // Vínculo 1:1 com o Lead de origem
+  convertedLeadId      String?       @unique
+  convertedLead        Lead?         @relation(fields: [convertedLeadId], references: [id], onDelete: SetNull)
+
+  // Configuração Meta Ads (preenchido pelo time interno da MOVY)
+  metaAdAccountId      String?       // ex: act_123456789
+  metaPixelId          String?
+
+  accountManagerId     String?
+  accountManager       User?         @relation("AccountManagerClients", fields: [accountManagerId], references: [id], onDelete: SetNull)
+
+  weeklyReports        WeeklyReport[]
+  contract             Contract?
+
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  @@map("clients")
+}
+
+model WeeklyReport {
+  id               String   @id @default(uuid())
+  clientId         String
+  client           Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  weekStartDate    DateTime
+  weekEndDate      DateTime
+
+  // Métricas extraídas da Meta Graph API
+  metaSpend        Float    @default(0.0)
+  metaImpressions  Int      @default(0)
+  metaClicks       Int      @default(0)
+  metaCtr          Float    @default(0.0)
+  metaCpc          Float    @default(0.0)
+  metaConversas    Int      @default(0)
+  metaCostPerChat  Float    @default(0.0)
+
+  // Métricas de Vendas/Delivery
+  faturamentoTotal Float?
+  pedidosTotais    Int?
+
+  // Análise e Recomendações do Gestor MOVY
+  analiseGestor    String?
+  proximasAcoes    String?
+
+  // Arquivo do PDF gerado no padrão MOVY e envio via WhatsApp
+  pdfUrl           String?
+  whatsappSent     Boolean  @default(false)
+  whatsappSentAt   DateTime?
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("weekly_reports")
+}
+
+model Contract {
+  id              String        @id @default(uuid())
+  clientId        String        @unique
+  client          Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  cycle           PlanCycle     @default(TRIMESTRAL)
+  planType        PlanType      @default(TRIMESTRAL_REUNIAO)
+  totalValue      Float         @default(4500.0) // Valor contratado (ex: R$ 4.500)
+  mrrEquivalent   Float         @default(1500.0) // Parcela mensal de receita (ex: R$ 1.500)
+  setupValue      Float         @default(0.0)    // Taxa de setup avulsa (se houver)
+  mediaBudget     Float         @default(1500.0) // Verba de mídia de referência Meta Ads
+  operationalCost Float         @default(150.0)  // Custo operacional COGS (ferramentas, proxies)
+  dueDay          Int           @default(10)     // Dia de vencimento (1 a 31)
+  paymentStatus   PaymentStatus @default(EM_DIA)
+
+  startDate       DateTime      @default(now())
+  endDate         DateTime?
+  churnReason     String?
+  notes           String?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("contracts")
+}
+

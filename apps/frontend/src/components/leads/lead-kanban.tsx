@@ -23,8 +23,6 @@ const COLUMNS: ColumnDef[] = [
   { stage: 'CONTATO_INICIADO', label: 'Contato Iniciado', color: 'border-amber-500/40 text-amber-400' },
   { stage: 'REUNIAO_AGENDADA', label: 'Reunião Agendada', color: 'border-brand/40 text-brand' },
   { stage: 'PROPOSTA_ENVIADA', label: 'Proposta Enviada', color: 'border-indigo-500/40 text-indigo-400' },
-  { stage: 'GANHO', label: 'Ganho', color: 'border-status-success/40 text-status-success' },
-  { stage: 'PERDIDO', label: 'Perdido', color: 'border-zinc-700 text-zinc-500' },
 ];
 
 export function LeadKanban({ leads, onStageChange }: LeadKanbanProps) {
@@ -72,11 +70,10 @@ export function LeadKanban({ leads, onStageChange }: LeadKanbanProps) {
             onDragOver={(e) => handleDragOver(e, col.stage)}
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, col.stage)}
-            className={`flex w-80 shrink-0 flex-col rounded-xl border transition-colors ${
-              isHovered
+            className={`flex w-80 shrink-0 flex-col rounded-xl border transition-colors ${isHovered
                 ? 'border-brand/50 bg-brand/5'
                 : 'border-white/10 bg-surface-card/60'
-            }`}
+              }`}
           >
             {/* Header da Coluna */}
             <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
@@ -126,22 +123,21 @@ export function LeadKanban({ leads, onStageChange }: LeadKanbanProps) {
                     {/* Micro-Radar de Qualificação Comercial */}
                     <div className="mt-3 flex items-center justify-between border-t border-white/5 pt-2.5">
                       <MicroRadar qualification={lead.qualification} compact />
-                      
+
                       {lead.qualification?.priority && (
                         <span
-                          className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
-                            lead.qualification.priority === 'ALTA'
+                          className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${lead.qualification.priority === 'ALTA'
                               ? 'bg-status-success/15 text-status-success'
                               : lead.qualification.priority === 'EM_DESENVOLVIMENTO'
-                              ? 'bg-status-warning/15 text-status-warning'
-                              : 'bg-zinc-800 text-zinc-400'
-                          }`}
+                                ? 'bg-status-warning/15 text-status-warning'
+                                : 'bg-zinc-800 text-zinc-400'
+                            }`}
                         >
                           {lead.qualification.priority === 'ALTA'
                             ? 'ALTA'
                             : lead.qualification.priority === 'EM_DESENVOLVIMENTO'
-                            ? 'EM DESENV.'
-                            : 'BAIXA'}
+                              ? 'EM DESENV.'
+                              : 'BAIXA'}
                         </span>
                       )}
                     </div>

@@ -21,7 +21,7 @@ export default function LeadsDashboardPage() {
     setErrorMessage(null);
 
     try {
-      const response = await api.get<Lead[]>('/leads');
+      const response = await api.get<Lead[]>('/leads?includeConverted=true');
       setLeads(response.data);
     } catch (err: any) {
       setErrorMessage(
@@ -66,6 +66,8 @@ export default function LeadsDashboardPage() {
     (l) => l.stage === 'REUNIAO_AGENDADA' || l.stage === 'PROPOSTA_ENVIADA'
   ).length;
   const ganhos = leads.filter((l) => l.stage === 'GANHO').length;
+
+  const taxaDeConversao = ((ganhos / totalLeads) * 100).toFixed(2);
 
   return (
     <div className="min-h-screen bg-surface-canvas">
@@ -116,12 +118,12 @@ export default function LeadsDashboardPage() {
           <div className="rounded-xl border border-white/10 bg-surface-card p-4">
             <div className="flex items-center justify-between text-text-muted">
               <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
-                Ganhos / Fechados
+                Taxa de conversão
               </span>
               <TrendingUp className="h-4 w-4 text-emerald-400" />
             </div>
             <div className="mt-2 text-2xl font-bold tabular-nums text-emerald-400">
-              {ganhos}
+              {taxaDeConversao}%
             </div>
           </div>
         </div>

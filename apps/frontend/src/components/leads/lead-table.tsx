@@ -42,6 +42,7 @@ export function LeadTable({ leads, onStageChange }: LeadTableProps) {
     return matchesSearch && matchesStage && matchesPriority;
   });
 
+
   return (
     <div className="space-y-4">
       {/* Barra de Filtros e Busca */}
@@ -161,13 +162,12 @@ export function LeadTable({ leads, onStageChange }: LeadTableProps) {
                     <td className="px-4 py-3.5">
                       {lead.qualification?.priority ? (
                         <span
-                          className={`inline-block rounded px-2 py-0.5 text-[10px] font-bold ${
-                            lead.qualification.priority === 'ALTA'
-                              ? 'bg-status-success/15 text-status-success'
-                              : lead.qualification.priority === 'EM_DESENVOLVIMENTO'
+                          className={`inline-block rounded px-2 py-0.5 text-[10px] font-bold ${lead.qualification.priority === 'ALTA'
+                            ? 'bg-status-success/15 text-status-success'
+                            : lead.qualification.priority === 'EM_DESENVOLVIMENTO'
                               ? 'bg-status-warning/15 text-status-warning'
                               : 'bg-zinc-800 text-zinc-400'
-                          }`}
+                            }`}
                         >
                           {lead.qualification.priority}
                         </span>

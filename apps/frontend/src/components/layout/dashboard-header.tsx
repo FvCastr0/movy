@@ -1,10 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { getCurrentUser, clearSession } from '@/lib/auth';
-import { LayoutGrid, Table, LogOut, Shield, RefreshCw } from 'lucide-react';
+import { getCurrentUser, clearSession, AuthUser } from '@/lib/auth';
+import { LayoutGrid, Table, LogOut, Shield, RefreshCw, Users, UserCheck, Briefcase, CircleDollarSign } from 'lucide-react';
 
 interface DashboardHeaderProps {
   viewMode?: 'kanban' | 'table';
@@ -21,7 +21,11 @@ export function DashboardHeader({
 }: DashboardHeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const user = getCurrentUser();
+  const [user, setUser] = useState<AuthUser | null>(null);
+
+  useEffect(() => {
+    setUser(getCurrentUser());
+  }, []);
 
   const handleLogout = () => {
     clearSession();
@@ -45,6 +49,50 @@ export function DashboardHeader({
               </span>
             </div>
           </Link>
+
+          {/* Navegação entre Módulos: Leads (SDR) vs CRM Comercial vs Clientes (Operação) */}
+          <nav className="flex items-center gap-1 pl-2 border-l border-white/10">
+            <Link
+              href="/crm"
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${pathname.startsWith('/crm')
+                  ? 'bg-brand/15 text-brand border border-brand/30'
+                  : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+                }`}
+            >
+              <Briefcase className="h-3.5 w-3.5" />
+              CRM Comercial
+            </Link>
+            <Link
+              href="/finance"
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${pathname.startsWith('/finance')
+                  ? 'bg-brand/15 text-brand border border-brand/30'
+                  : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+                }`}
+            >
+              <CircleDollarSign className="h-3.5 w-3.5" />
+              Financeiro
+            </Link>
+            <Link
+              href="/leads"
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${pathname.startsWith('/leads')
+                  ? 'bg-brand/15 text-brand border border-brand/30'
+                  : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+                }`}
+            >
+              <Users className="h-3.5 w-3.5" />
+              Funil Leads
+            </Link>
+            <Link
+              href="/clients"
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${pathname.startsWith('/clients')
+                  ? 'bg-brand/15 text-brand border border-brand/30'
+                  : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+                }`}
+            >
+              <UserCheck className="h-3.5 w-3.5" />
+              Clientes Ativos
+            </Link>
+          </nav>
 
           {/* Seletor de Modo de Visualização (Kanban vs Tabela) */}
           {isLeadsPage && onViewModeChange && (

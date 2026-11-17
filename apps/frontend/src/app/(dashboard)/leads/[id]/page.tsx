@@ -19,6 +19,7 @@ import {
   MessageSquare,
   ShieldAlert,
   User,
+  UserCheck,
 } from 'lucide-react';
 
 const CRITERIA_CONFIG = [
@@ -237,6 +238,27 @@ export default function LeadDetailPage() {
     }
   };
 
+  // Converter Lead Fechado em Cliente
+  const handleConvertToClient = async () => {
+    if (!lead) return;
+    const confirmConversion = window.confirm(
+      `Deseja converter ${lead.deliveryNome} em Cliente ativo da MOVY? O lead será transferido para a gestão de clientes.`
+    );
+    if (!confirmConversion) return;
+
+    try {
+      const res = await api.post(`/clients/convert-from-lead/${leadId}`, {});
+      const createdClient = res.data;
+      if (createdClient?.id) {
+        alert('Lead convertido com sucesso em Cliente ativo da MOVY!');
+        router.push(`/clients/${createdClient.id}`);
+      }
+    } catch (err: any) {
+      console.error('Erro ao converter lead:', err);
+      alert(err.response?.data?.message || 'Falha ao converter lead em cliente.');
+    }
+  };
+
   // Adicionar Nota de Follow-up
   const handleAddFollowUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -324,6 +346,28 @@ export default function LeadDetailPage() {
                 <option value="PERDIDO">Perdido</option>
               </select>
             </div>
+
+            {/* Botão de Converter em Cliente quando Ganho */}
+            {lead.stage === 'GANHO' && !lead.client && (
+              <button
+                type="button"
+                onClick={handleConvertToClient}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-brand px-3.5 py-2 text-xs font-bold text-white shadow-md shadow-brand/20 hover:bg-brand-hover transition-all active:scale-95"
+              >
+                <UserCheck className="h-3.5 w-3.5" />
+                Converter em Cliente
+              </button>
+            )}
+
+            {lead.client && (
+              <Link
+                href={`/clients/${lead.client.id}`}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-brand/30 bg-brand/10 px-3.5 py-2 text-xs font-bold text-brand hover:bg-brand/20 transition-all active:scale-95"
+              >
+                <UserCheck className="h-3.5 w-3.5" />
+                Ver Cliente Ativo
+              </Link>
+            )}
           </div>
         </div>
 
