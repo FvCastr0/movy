@@ -2,18 +2,28 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { api } from '@/lib/api';
-import { Lead, LeadStage, LeadOriginType, CrmMetrics } from '@/types';
+import { Lead, LeadStage, CrmMetrics, CrmDateRange } from '@/types';
 import { CrmKpiCards } from '@/components/crm/crm-kpi-cards';
 import { CrmPipeline } from '@/components/crm/crm-pipeline';
 import { CreateOutboundModal } from '@/components/crm/create-outbound-modal';
+import { CrmDateFilter } from '@/components/crm/crm-date-filter';
+import { StageUndoToast, UndoToastData } from '@/components/crm/stage-undo-toast';
 import {
   UserPlus,
   RefreshCw,
   Search,
   AlertCircle,
-  Filter,
-  Sparkles,
 } from 'lucide-react';
+
+const STAGE_LABELS: Record<string, string> = {
+  NOVO: 'Novo Lead',
+  CONTATO_INICIADO: 'Em Contato',
+  REUNIAO_AGENDADA: 'Reunião Agendada',
+  NO_SHOW: 'No-Show',
+  PROPOSTA_ENVIADA: 'Proposta Enviada',
+  FECHADO: 'Fechado',
+  PERDIDO: 'Perdido',
+};
 
 export default function CrmDashboardPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -25,6 +35,13 @@ export default function CrmDashboardPage() {
   // Filtros
   const [originFilter, setOriginFilter] = useState<'ALL' | 'INBOUND' | 'OUTBOUND'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [dateRange, setDateRange] = useState<CrmDateRange>({
+    preset: 'ALL',
+    label: 'Todo o Período (Geral)',
+  });
+
+  // Undo Toast state
+  const [undoToastData, setUndoToastData] = useState<UndoToastData | null>(null);
 
   // Modais
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -45,11 +62,20 @@ export default function CrmDashboardPage() {
           queryParams.append('search', searchQuery.trim());
         }
 
+        const metricsParams = new URLSearchParams();
+        if (originFilter !== 'ALL') {
+          metricsParams.append('origemTipo', originFilter);
+        }
+        if (dateRange.startDate) {
+          metricsParams.append('startDate', dateRange.startDate);
+        }
+        if (dateRange.endDate) {
+          metricsParams.append('endDate', dateRange.endDate);
+        }
+
         const [leadsRes, metricsRes] = await Promise.all([
           api.get<Lead[]>(`/leads/crm?${queryParams.toString()}`),
-          api.get<CrmMetrics>(
-            `/leads/crm-metrics${originFilter !== 'ALL' ? `?origemTipo=${originFilter}` : ''}`
-          ),
+          api.get<CrmMetrics>(`/leads/crm-metrics?${metricsParams.toString()}`),
         ]);
 
         setLeads(leadsRes.data);
@@ -63,32 +89,53 @@ export default function CrmDashboardPage() {
         setIsRefreshing(false);
       }
     },
-    [originFilter, searchQuery]
+    [originFilter, searchQuery, dateRange]
   );
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // Transição Otimista de Estágio no Pipeline
+  const reloadMetrics = useCallback(async () => {
+    try {
+      const metricsParams = new URLSearchParams();
+      if (originFilter !== 'ALL') {
+        metricsParams.append('origemTipo', originFilter);
+      }
+      if (dateRange.startDate) {
+        metricsParams.append('startDate', dateRange.startDate);
+      }
+      if (dateRange.endDate) {
+        metricsParams.append('endDate', dateRange.endDate);
+      }
+      const res = await api.get<CrmMetrics>(`/leads/crm-metrics?${metricsParams.toString()}`);
+      setMetrics(res.data);
+    } catch {
+      // Ignora erro em background
+    }
+  }, [originFilter, dateRange]);
+
+  // Transição de Estágio no Pipeline com Suporte a Undo
   const handleStageChange = async (
     leadId: string,
     targetStage: LeadStage,
     extraData?: { lostReason?: string; meetingDate?: string; dealValue?: number }
   ) => {
     const previousLeads = [...leads];
+    const targetLead = leads.find((l) => l.id === leadId);
+    const previousStage = targetLead?.stage;
 
     // Atualização otimista
     setLeads((prev) =>
       prev.map((l) =>
         l.id === leadId
           ? {
-              ...l,
-              stage: targetStage,
-              lostReason: extraData?.lostReason !== undefined ? extraData.lostReason : l.lostReason,
-              meetingDate: extraData?.meetingDate !== undefined ? extraData.meetingDate : l.meetingDate,
-              dealValue: extraData?.dealValue !== undefined ? extraData.dealValue : l.dealValue,
-            }
+            ...l,
+            stage: targetStage,
+            lostReason: extraData?.lostReason !== undefined ? extraData.lostReason : l.lostReason,
+            meetingDate: extraData?.meetingDate !== undefined ? extraData.meetingDate : l.meetingDate,
+            dealValue: extraData?.dealValue !== undefined ? extraData.dealValue : l.dealValue,
+          }
           : l
       )
     );
@@ -98,20 +145,52 @@ export default function CrmDashboardPage() {
         stage: targetStage,
         ...extraData,
       });
-      // Recarrega as métricas em background para refletir a nova contagem/conversão
-      api
-        .get<CrmMetrics>(
-          `/leads/crm-metrics${originFilter !== 'ALL' ? `?origemTipo=${originFilter}` : ''}`
-        )
-        .then((res) => setMetrics(res.data))
-        .catch(() => null);
+
+      // Ativa o toast flutuante para permitir desfazer
+      if (targetLead && previousStage && previousStage !== targetStage) {
+        setUndoToastData({
+          leadId,
+          leadName: targetLead.deliveryNome || targetLead.nome || 'Lead',
+          fromStageLabel: STAGE_LABELS[previousStage] || previousStage,
+          toStageLabel: STAGE_LABELS[targetStage] || targetStage,
+        });
+      }
+
+      // Recarrega as métricas em background para refletir a nova contagem de eventos
+      reloadMetrics();
     } catch (err: any) {
       // Rollback imediato se o backend rejeitar
       setLeads(previousLeads);
       alert(
         err.response?.data?.message ||
-          'Não foi possível atualizar o estágio no servidor. A alteração foi desfeita.'
+        'Não foi possível atualizar o estágio no servidor. A alteração foi desfeita.'
       );
+    }
+  };
+
+  // Ação de Desfazer via Toast Flutuante
+  const handleUndo = async (leadId: string) => {
+    try {
+      const res = await api.post(`/leads/${leadId}/crm-stage/undo`);
+      const restoredStage = res.data?.restoredStage as LeadStage;
+
+      // Restaura o lead no estado local do Kanban
+      setLeads((prev) =>
+        prev.map((l) =>
+          l.id === leadId
+            ? {
+              ...l,
+              stage: restoredStage,
+            }
+            : l
+        )
+      );
+
+      // Recarrega as métricas para decrementar os contadores
+      await reloadMetrics();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Falha ao desfazer o estágio.');
+      throw err;
     }
   };
 
@@ -125,17 +204,20 @@ export default function CrmDashboardPage() {
               <h1 className="text-xl font-bold tracking-tight text-text-primary">
                 CRM & Pipeline Comercial
               </h1>
-              <span className="inline-flex items-center gap-1 rounded-full bg-brand/10 px-2 py-0.5 text-[11px] font-semibold text-brand">
-                <Sparkles className="h-3 w-3" />
-                V1 Ativa
-              </span>
             </div>
             <p className="mt-0.5 text-xs text-text-muted">
               Acompanhamento de ponta a ponta: Inbound, Prospecção Outbound, No-Show e Fechamentos
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Seletor de Período Temporal */}
+            <CrmDateFilter
+              currentRange={dateRange}
+              onChange={setDateRange}
+              disabled={isRefreshing}
+            />
+
             <button
               type="button"
               onClick={() => fetchData(true)}
@@ -170,11 +252,10 @@ export default function CrmDashboardPage() {
             <button
               type="button"
               onClick={() => setOriginFilter('ALL')}
-              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
-                originFilter === 'ALL'
-                  ? 'bg-white/10 text-text-primary shadow-sm'
-                  : 'text-text-muted hover:text-text-primary'
-              }`}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${originFilter === 'ALL'
+                ? 'bg-white/10 text-text-primary shadow-sm'
+                : 'text-text-muted hover:text-text-primary'
+                }`}
             >
               Todos os Leads
             </button>
@@ -182,11 +263,10 @@ export default function CrmDashboardPage() {
             <button
               type="button"
               onClick={() => setOriginFilter('INBOUND')}
-              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
-                originFilter === 'INBOUND'
-                  ? 'bg-blue-500/20 text-blue-400 shadow-sm border border-blue-500/30'
-                  : 'text-text-muted hover:text-text-primary'
-              }`}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${originFilter === 'INBOUND'
+                ? 'bg-blue-500/20 text-blue-400 shadow-sm border border-blue-500/30'
+                : 'text-text-muted hover:text-text-primary'
+                }`}
             >
               Inbound (Landing Page)
             </button>
@@ -194,11 +274,10 @@ export default function CrmDashboardPage() {
             <button
               type="button"
               onClick={() => setOriginFilter('OUTBOUND')}
-              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
-                originFilter === 'OUTBOUND'
-                  ? 'bg-amber-500/20 text-amber-400 shadow-sm border border-amber-500/30'
-                  : 'text-text-muted hover:text-text-primary'
-              }`}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${originFilter === 'OUTBOUND'
+                ? 'bg-amber-500/20 text-amber-400 shadow-sm border border-amber-500/30'
+                : 'text-text-muted hover:text-text-primary'
+                }`}
             >
               Outbound (Prospecção)
             </button>
@@ -237,6 +316,13 @@ export default function CrmDashboardPage() {
           <CrmPipeline leads={leads} onStageChange={handleStageChange} />
         )}
       </main>
+
+      {/* Toast Flutuante de Desfazer Transição (Undo) */}
+      <StageUndoToast
+        data={undoToastData}
+        onUndo={handleUndo}
+        onClose={() => setUndoToastData(null)}
+      />
 
       {/* Modal de Cadastro de Lead Outbound */}
       <CreateOutboundModal

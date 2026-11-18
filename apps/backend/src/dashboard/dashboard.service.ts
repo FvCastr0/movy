@@ -21,6 +21,10 @@ export interface DashboardOverviewResponse {
     totalLeads: number;
     pipelineValue: number;
     conversionRate: number;
+    bookingRate: number;
+    noShowRate: number;
+    agendadosCount: number;
+    noShowCount: number;
     leadsByStage: Record<string, number>;
     leadInflow: LeadInflowItem[];
     inflowTotal: number;
@@ -159,6 +163,23 @@ export class DashboardService {
     });
 
     const conversionRate = totalLeads > 0 ? Number(((closedCount / totalLeads) * 100).toFixed(1)) : 0;
+
+    const scheduledEventsCount = this.prisma.leadStageHistory
+      ? await this.prisma.leadStageHistory.count({
+          where: { toStage: 'REUNIAO_AGENDADA', isReverted: false },
+        })
+      : 0;
+
+    const noShowEventsCount = this.prisma.leadStageHistory
+      ? await this.prisma.leadStageHistory.count({
+          where: { toStage: 'NO_SHOW', isReverted: false },
+        })
+      : 0;
+
+    const agendadosCount = scheduledEventsCount || leadsByStage['REUNIAO_AGENDADA'] || 0;
+    const noShowCount = noShowEventsCount || leadsByStage['NO_SHOW'] || 0;
+    const bookingRate = totalLeads > 0 ? Number(((agendadosCount / totalLeads) * 100).toFixed(1)) : 0;
+    const noShowRate = agendadosCount > 0 ? Number(((noShowCount / agendadosCount) * 100).toFixed(1)) : 0;
 
     // Montar série temporal de chegada de leads (14, 30, 90 ou 180 dias contínuos)
     const validDays = [14, 30, 90, 180];
@@ -375,6 +396,10 @@ export class DashboardService {
         totalLeads,
         pipelineValue: Number(pipelineValue.toFixed(2)),
         conversionRate,
+        bookingRate,
+        noShowRate,
+        agendadosCount,
+        noShowCount,
         leadsByStage,
         leadInflow,
         inflowTotal,

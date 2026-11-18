@@ -19,6 +19,9 @@ describe('DashboardService', () => {
     lead: {
       findMany: jest.fn(),
     },
+    leadStageHistory: {
+      count: jest.fn().mockResolvedValue(0),
+    },
   };
 
   const mockConfigService = {

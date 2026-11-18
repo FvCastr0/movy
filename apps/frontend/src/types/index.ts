@@ -16,12 +16,37 @@ export interface CrmMetrics {
   totalLeads: number;
   totalInbound: number;
   totalOutbound: number;
+  agendadosCount?: number;
+  noShowCount?: number;
+  fechadosCount?: number;
+  reunioesRealizadasCount?: number;
   bookingRate: number;
   noShowRate: number;
   winRate: number;
   totalPipelineValue: number;
   closedRevenueValue: number;
   stageCounts: Record<string, number>;
+}
+
+export type CrmDatePreset = 'ALL' | 'TODAY' | '7D' | 'THIS_MONTH' | 'LAST_MONTH' | 'CUSTOM';
+
+export interface CrmDateRange {
+  preset: CrmDatePreset;
+  startDate?: string;
+  endDate?: string;
+  label: string;
+}
+
+export interface LeadStageHistory {
+  id: string;
+  leadId: string;
+  fromStage?: LeadStage | null;
+  toStage: LeadStage;
+  reason?: string | null;
+  isReverted: boolean;
+  revertedAt?: string | null;
+  userId?: string | null;
+  createdAt: string;
 }
 
 export type LeadPriority = 'ALTA' | 'EM_DESENVOLVIMENTO' | 'BAIXA_PRONTIDAO' | 'INCOMPLETA';
@@ -323,6 +348,10 @@ export interface DashboardOverview {
     totalLeads: number;
     pipelineValue: number;
     conversionRate: number;
+    bookingRate?: number;
+    noShowRate?: number;
+    agendadosCount?: number;
+    noShowCount?: number;
     leadsByStage: Record<string, number>;
     leadInflow: LeadInflowItem[];
     inflowTotal: number;

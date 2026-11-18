@@ -1,65 +1,77 @@
-# Technical Implementation Plan: MOVY System Redesign & Dynamic Pill Navbar
+# Technical Implementation Plan: CRM Event-Driven Metrics & Stage Undo
 
 ## Context & Objectives
-Executar o redesign visual do sistema interno MOVY (`apps/frontend`), implementando a nova direção estética *Dark Modern Minimalist (High-End SaaS)* e introduzindo a **Floating Dynamic Pill Navbar** no topo com física de mola (`framer-motion`) e colapso responsivo circular em mobile (Opção A), mantendo `landing-page/` 100% intocada.
+Implementar a arquitetura baseada em eventos para o CRM Comercial do MOVY, resolvendo a perda de métricas ao mover leads entre estágios. Adicionar tabela de histórico (`LeadStageHistory`), cálculo temporal de taxas (No-Show e Agendamentos), suporte a filtros por período (Geral por padrão) e mecanismo de **Desfazer (Undo)** via Toast Flutuante na interface.
 
 ---
 
 ## 1. Arquitetura de Componentes & Dependências
 
 ```
-apps/frontend/src/
-├── app/
-│   ├── globals.css                       [Atualizado com variáveis e gradientes de vidro]
-│   └── (dashboard)/
-│       ├── layout.tsx                    [Shell unificado: DynamicPillHeader + pt-24]
-│       └── page.tsx                      [Integração estética minimalista]
-├── components/
-│   ├── layout/
-│   │   ├── dynamic-pill-header.tsx       [NOVO: Floating Pill Navbar com motion.div + layoutId]
-│   │   └── dashboard-header.tsx          [Deprecado / mantido para compatibilidade pontual]
-│   └── dashboard/
-│       └── dashboard-kpi-grid.tsx        [Cards minimalistas com micro-animação]
-└── tailwind.config.ts                    [Tokens de cor e sombras de vidro]
+PostgreSQL / Prisma
+  └── LeadStageHistory (model com leadId, fromStage, toStage, reason, isReverted, createdAt)
+        ▲
+        ├── Backend: LeadsService (Prisma Transaction para update de estágio + gravação de histórico)
+        ├── Backend: LeadsService (undoLastStage: busca última transição ativa, marca revertida, restaura estágio anterior)
+        ├── Backend: LeadsService (getCrmMetrics: cálculo baseado em eventos históricos com filtros de data)
+        ├── Backend: LeadsController (POST /leads/:id/crm-stage/undo & GET /leads/crm-metrics?startDate=&endDate=&origemTipo=)
+        └── Backend: DashboardService (alinhamento de métricas do overview)
+              ▲
+              ├── Frontend: types/index.ts (CrmMetrics, LeadStageHistory, CrmDateRange)
+              ├── Frontend: CrmDateFilter (seletor de período Geral/Hoje/7d/Mês/Custom)
+              ├── Frontend: StageUndoToast (toast flutuante com timer de 8s e botão de desfazer)
+              ├── Frontend: CrmPipeline & crm/page.tsx (integração do Kanban com Undo e métricas dinâmicas)
+              └── Frontend: CommercialFunnelWidget & (dashboard)/page.tsx (Visão Geral com dados temporais)
 ```
 
 ---
 
 ## 2. Ordem de Implementação (Vertical Slices)
 
-1. **Slice 1: Dependências e Tokens Visuais**
-   - Instalação do `framer-motion` em `apps/frontend`.
-   - Refinamento de `tailwind.config.ts` com tokens `surface.canvas` (`#09090B`), `surface.pill` (`rgba(18, 18, 21, 0.75)`), bordas translúcidas de precisão e sombras difusas.
-   - Ajuste em `globals.css` para scrollbar oculta/fina e classes de backdrop-blur aprimoradas.
+### Slice 1: Database Model & Migrações Prisma
+- Atualizar `apps/backend/prisma/schema.prisma` adicionando o model `LeadStageHistory` e a relação `stageHistories` no model `Lead`.
+- Executar `npx prisma migrate dev --name add_lead_stage_history`.
+- Executar `npx prisma generate` para expor os tipos no `@prisma/client`.
 
-2. **Slice 2: Componente `DynamicPillHeader` (Navbar Flutuante)**
-   - Construção de `dynamic-pill-header.tsx`:
-     - Container: `fixed top-4 inset-x-0 mx-auto w-fit z-50`.
-     - Pílula flutuante principal com `rounded-full border border-white/10 bg-zinc-950/75 backdrop-blur-xl shadow-2xl shadow-black/40 px-3 py-1.5`.
-     - Abas com sliding background animado via `layoutId="activePill"` do `framer-motion`.
-     - Responsividade (Opção A): em telas menores (`< md`), colapsa para pílula compacta com botão circular que abre menu suspenso flutuante com `AnimatePresence`.
-     - Área de perfil e logout discreto com micro-interações.
+### Slice 2: Backend Core - Histórico, Undo & Cálculo Temporal
+- Criar `CrmMetricsQueryDto` com validação de `startDate`, `endDate`, `origemTipo`.
+- Atualizar `updateCrmStage` em `leads.service.ts`:
+  - Usar `prisma.$transaction` para atualizar o lead e registrar `LeadStageHistory(fromStage, toStage, reason)`.
+- Implementar `undoLastStage(leadId)` em `leads.service.ts`:
+  - Buscar a última transição com `isReverted: false`.
+  - Marcar `isReverted: true` e `revertedAt: new Date()`.
+  - Reverter `Lead.stage` para `fromStage` (ou `NOVO`).
+- Atualizar `getCrmMetrics`:
+  - Filtrar eventos de `LeadStageHistory` por período (ou all-time se datas omitidas).
+  - Calcular `agendadosCount` (eventos `toStage = REUNIAO_AGENDADA` não revertidos).
+  - Calcular `noShowCount` (eventos `toStage = NO_SHOW` não revertidos).
+  - Computar `bookingRate` e `noShowRate` sobre as contagens de eventos.
+- Expor endpoint `POST /leads/:id/crm-stage/undo` no `leads.controller.ts`.
 
-3. **Slice 3: Layout Shell e Adaptação das Rotas**
-   - Criar ou atualizar `apps/frontend/src/app/(dashboard)/layout.tsx` para carregar o `DynamicPillHeader` centralizado e aplicar padding superior adequado (`pt-24 pb-12 px-4 sm:px-6 max-w-7xl mx-auto`).
-   - Remover invocações antigas e estáticas do cabeçalho em `(dashboard)/page.tsx` para evitar headers duplicados.
+### Slice 3: Backend Tests
+- Adicionar testes em `leads.service.spec.ts` validando:
+  - Registro de histórico a cada mudança de estágio.
+  - Comportamento de `undoLastStage` (reversão do estágio e decremento das métricas).
+  - Isolamento de eventos por filtro de data.
 
-4. **Slice 4: Modernização Minimalista dos Cards do Dashboard**
-   - Atualizar `dashboard-kpi-grid.tsx` com novo design minimalista:
-     - Remoção de saturações excessivas; uso de hierarquia tipográfica e números tabulares (`tabular-nums`).
-     - Micro-animações de stagger suave na entrada dos cards com `framer-motion`.
+### Slice 4: Frontend - Componente de Filtro de Data & Tipagem
+- Atualizar `apps/frontend/src/types/index.ts` com as interfaces atualizadas de métricas e tipos de filtro de período.
+- Criar componente `apps/frontend/src/components/crm/crm-date-filter.tsx` com presets (*Geral*, *Hoje*, *Últimos 7 dias*, *Este Mês*, *Mês Anterior*, *Customizado*).
 
-5. **Slice 5: Verificação de Compilação & Integridade**
-   - Executar `npm run build` no `apps/frontend` e resolver qualquer erro de tipagem/SSR.
-   - Validar que nenhum arquivo em `landing-page/` foi alterado.
+### Slice 5: Frontend - Toast Flutuante de Undo & Integração no Pipeline
+- Criar componente de toast flutuante `StageUndoToast` com barra de progresso (8s) e botão "Desfazer".
+- Integrar no `apps/frontend/src/app/(dashboard)/crm/page.tsx`:
+  - Ao mover card no pipeline, abrir toast com os dados da transição.
+  - Ao clicar em "Desfazer", disparar `POST /leads/:id/crm-stage/undo`, reverter a posição do card na tela e recarregar métricas.
+  - Integrar `CrmDateFilter` ao lado dos filtros existentes, enviando `startDate` e `endDate` na busca de métricas.
+
+### Slice 6: Frontend - Visão Geral do Dashboard
+- Atualizar `apps/frontend/src/app/(dashboard)/page.tsx` e `commercial-funnel-widget.tsx` para sincronizar as métricas de conversão e taxas com a nova lógica.
 
 ---
 
 ## 3. Riscos & Mitigações
-
-- **Risco de Hydration mismatch com Framer Motion:**
-  - *Mitigação:* Usar `'use client'` em componentes animados e garantir renderização segura de layoutId com montagem controlada em `useEffect`.
-- **Risco de quebra de layout em mobile por overflow horizontal:**
-  - *Mitigação:* Esconder o grupo de links em telas `< md` e expor o botão circular com drawer/dropdown suspenso conforme Opção A aprovada.
-- **Risco de sobreposição do conteúdo pelo header flutuante:**
-  - *Mitigação:* Padding superior consistente no shell (`pt-24`) garantindo que nenhum card ou título fique oculto sob a barra.
+- **Risco:** Condição de corrida ao disparar múltiplos arrastos rápidos de cards.
+  - **Mitigação:** Travar o card individual durante a requisição de transição e manter pilha simples de Undo para a última transição do usuário.
+- **Risco:** Fuso horário / UTC no filtro de datas.
+  - **Mitigação:** Tratar datas no padrão ISO 8601 início do dia (00:00:00) e fim do dia (23:59:59.999).

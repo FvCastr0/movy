@@ -4,6 +4,7 @@ import { CaptureLeadDto } from './dto/capture-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { CreateOutboundLeadDto } from './dto/create-outbound-lead.dto';
 import { UpdateCrmStageDto } from './dto/update-crm-stage.dto';
+import { CrmMetricsQueryDto } from './dto/crm-metrics-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { LeadOriginType } from '@prisma/client';
 
@@ -32,8 +33,8 @@ export class LeadsController {
 
   @UseGuards(JwtAuthGuard)
   @Get('crm-metrics')
-  async getCrmMetrics(@Query('origemTipo') origemTipo?: LeadOriginType) {
-    return this.leadsService.getCrmMetrics(origemTipo);
+  async getCrmMetrics(@Query() query: CrmMetricsQueryDto) {
+    return this.leadsService.getCrmMetrics(query);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -47,8 +48,20 @@ export class LeadsController {
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id/crm-stage')
-  async updateCrmStage(@Param('id') id: string, @Body() dto: UpdateCrmStageDto) {
-    return this.leadsService.updateCrmStage(id, dto);
+  async updateCrmStage(
+    @Param('id') id: string,
+    @Body() dto: UpdateCrmStageDto,
+    @Request() req: any,
+  ) {
+    const userId = req.user?.id;
+    return this.leadsService.updateCrmStage(id, dto, userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/crm-stage/undo')
+  @HttpCode(HttpStatus.OK)
+  async undoCrmStage(@Param('id') id: string) {
+    return this.leadsService.undoLastStage(id);
   }
 
   // ==============================================================================

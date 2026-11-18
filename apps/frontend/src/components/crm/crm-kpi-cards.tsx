@@ -42,7 +42,7 @@ export function CrmKpiCards({ metrics, isLoading = false }: CrmKpiCardsProps) {
           {isLoading ? '-' : `${metrics?.bookingRate ?? 0}%`}
         </div>
         <p className="mt-1 text-xs text-text-muted">
-          Reuniões marcadas sobre leads totais
+          {isLoading ? 'Calculando...' : `${metrics?.agendadosCount ?? 0} agendamento(s)`}
         </p>
       </div>
 
@@ -56,7 +56,7 @@ export function CrmKpiCards({ metrics, isLoading = false }: CrmKpiCardsProps) {
           {isLoading ? '-' : `${metrics?.noShowRate ?? 0}%`}
         </div>
         <p className="mt-1 text-xs text-text-muted">
-          Não compareceram à reunião
+          {isLoading ? 'Calculando...' : `${metrics?.noShowCount ?? 0} falta(s) no-show`}
         </p>
       </div>
 
@@ -70,7 +70,7 @@ export function CrmKpiCards({ metrics, isLoading = false }: CrmKpiCardsProps) {
           {isLoading ? '-' : `${metrics?.winRate ?? 0}%`}
         </div>
         <p className="mt-1 text-xs text-text-muted">
-          Fechados sobre reuniões feitas
+          {isLoading ? 'Calculando...' : `${metrics?.fechadosCount ?? 0} fechado(s)`}
         </p>
       </div>
 

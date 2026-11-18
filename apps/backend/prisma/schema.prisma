@@ -67,6 +67,7 @@ model User {
   leads        Lead[]         @relation("SdrLeads")
   followUps    LeadFollowUp[]
   clients      Client[]       @relation("AccountManagerClients")
+  stageHistories LeadStageHistory[]
 
   @@map("users")
 }
@@ -110,6 +111,7 @@ model Lead {
 
   qualification       LeadQualification?
   followUps           LeadFollowUp[]
+  stageHistories      LeadStageHistory[]
   client              Client?
 
   createdAt           DateTime            @default(now())
@@ -172,6 +174,25 @@ model LeadFollowUp {
   createdAt   DateTime  @default(now())
 
   @@map("lead_follow_ups")
+}
+
+model LeadStageHistory {
+  id          String     @id @default(uuid())
+  leadId      String
+  lead        Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  fromStage   LeadStage?
+  toStage     LeadStage
+  reason      String?
+  isReverted  Boolean    @default(false)
+  revertedAt  DateTime?
+  userId      String?
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt   DateTime   @default(now())
+
+  @@index([leadId])
+  @@index([toStage, createdAt])
+  @@index([createdAt])
+  @@map("lead_stage_histories")
 }
 
 enum ClientStatus {

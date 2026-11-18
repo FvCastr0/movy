@@ -6,6 +6,7 @@ import { UpdateLeadDto } from './dto/update-lead.dto';
 import { CreateOutboundLeadDto } from './dto/create-outbound-lead.dto';
 import { UpdateCrmStageDto } from './dto/update-crm-stage.dto';
 import { CrmMetricsResponseDto } from './dto/crm-metrics-response.dto';
+import { CrmMetricsQueryDto } from './dto/crm-metrics-query.dto';
 import { NotificationStatus, LeadOriginType, LeadStage } from '@prisma/client';
 
 @Injectable()
@@ -32,6 +33,12 @@ export class LeadsService {
         notificationStatus: NotificationStatus.PENDING,
         qualification: {
           create: {},
+        },
+        stageHistories: {
+          create: {
+            fromStage: null,
+            toStage: LeadStage.NOVO,
+          },
         },
       },
       include: {
@@ -168,6 +175,13 @@ export class LeadsService {
         qualification: {
           create: {},
         },
+        stageHistories: {
+          create: {
+            fromStage: null,
+            toStage: LeadStage.NOVO,
+            userId: userId || null,
+          },
+        },
       },
       include: {
         qualification: true,
@@ -178,7 +192,7 @@ export class LeadsService {
     });
   }
 
-  async updateCrmStage(id: string, dto: UpdateCrmStageDto) {
+  async updateCrmStage(id: string, dto: UpdateCrmStageDto, userId?: string) {
     const lead = await this.prisma.lead.findUnique({ where: { id } });
     if (!lead) {
       throw new NotFoundException(`Lead com ID ${id} não foi encontrado.`);
@@ -192,23 +206,95 @@ export class LeadsService {
       throw new BadRequestException('A data e horário da reunião são obrigatórios para agendamentos.');
     }
 
-    return this.prisma.lead.update({
-      where: { id },
-      data: {
-        stage: dto.stage,
-        lostReason: dto.stage === LeadStage.PERDIDO ? dto.lostReason?.trim() : undefined,
-        meetingDate: dto.meetingDate ? new Date(dto.meetingDate) : undefined,
-        dealValue: dto.dealValue !== undefined ? dto.dealValue : undefined,
-      },
-      include: {
-        qualification: true,
-        client: {
-          select: { id: true, status: true },
+    const stageChanged = dto.stage !== lead.stage;
+
+    return this.prisma.$transaction(async (tx) => {
+      const updatedLead = await tx.lead.update({
+        where: { id },
+        data: {
+          stage: dto.stage,
+          lostReason: dto.stage === LeadStage.PERDIDO ? dto.lostReason?.trim() : undefined,
+          meetingDate: dto.meetingDate ? new Date(dto.meetingDate) : undefined,
+          dealValue: dto.dealValue !== undefined ? dto.dealValue : undefined,
         },
-        sdrResponsible: {
-          select: { id: true, name: true, email: true },
+        include: {
+          qualification: true,
+          client: {
+            select: { id: true, status: true },
+          },
+          sdrResponsible: {
+            select: { id: true, name: true, email: true },
+          },
         },
+      });
+
+      if (stageChanged) {
+        await tx.leadStageHistory.create({
+          data: {
+            leadId: id,
+            fromStage: lead.stage,
+            toStage: dto.stage,
+            reason: dto.stage === LeadStage.PERDIDO ? dto.lostReason?.trim() : null,
+            userId: userId || null,
+          },
+        });
+      }
+
+      return updatedLead;
+    });
+  }
+
+  async undoLastStage(id: string) {
+    const lead = await this.prisma.lead.findUnique({ where: { id } });
+    if (!lead) {
+      throw new NotFoundException(`Lead com ID ${id} não foi encontrado.`);
+    }
+
+    const lastHistory = await this.prisma.leadStageHistory.findFirst({
+      where: {
+        leadId: id,
+        isReverted: false,
       },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!lastHistory) {
+      throw new BadRequestException('Não há nenhuma alteração recente de estágio disponível para desfazer.');
+    }
+
+    const restoredStage = lastHistory.fromStage || LeadStage.NOVO;
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.leadStageHistory.update({
+        where: { id: lastHistory.id },
+        data: {
+          isReverted: true,
+          revertedAt: new Date(),
+        },
+      });
+
+      const updatedLead = await tx.lead.update({
+        where: { id },
+        data: {
+          stage: restoredStage,
+          lostReason: restoredStage === LeadStage.PERDIDO ? lead.lostReason : null,
+        },
+        include: {
+          qualification: true,
+          client: {
+            select: { id: true, status: true },
+          },
+          sdrResponsible: {
+            select: { id: true, name: true, email: true },
+          },
+        },
+      });
+
+      return {
+        message: `Estágio desfeito com sucesso para ${restoredStage}.`,
+        lead: updatedLead,
+        restoredStage,
+      };
     });
   }
 
@@ -245,8 +331,28 @@ export class LeadsService {
     });
   }
 
-  async getCrmMetrics(origemTipo?: LeadOriginType): Promise<CrmMetricsResponseDto> {
-    const where = origemTipo ? { origemTipo } : {};
+  async getCrmMetrics(query?: CrmMetricsQueryDto): Promise<CrmMetricsResponseDto> {
+    const origemTipo = query?.origemTipo;
+    const where: any = origemTipo ? { origemTipo } : {};
+
+    let startDateTime: Date | undefined;
+    let endDateTime: Date | undefined;
+
+    if (query?.startDate) {
+      startDateTime = new Date(query.startDate);
+      startDateTime.setHours(0, 0, 0, 0);
+    }
+    if (query?.endDate) {
+      endDateTime = new Date(query.endDate);
+      endDateTime.setHours(23, 59, 59, 999);
+    }
+
+    if (startDateTime || endDateTime) {
+      where.createdAt = {};
+      if (startDateTime) where.createdAt.gte = startDateTime;
+      if (endDateTime) where.createdAt.lte = endDateTime;
+    }
+
     const leads = await this.prisma.lead.findMany({
       where,
       select: {
@@ -261,10 +367,6 @@ export class LeadsService {
     const totalLeads = leads.length;
     let totalInbound = 0;
     let totalOutbound = 0;
-    let agendadosCount = 0;
-    let noShowCount = 0;
-    let fechadosCount = 0;
-    let reunioesRealizadasCount = 0;
     let totalPipelineValue = 0;
     let closedRevenueValue = 0;
 
@@ -287,32 +389,72 @@ export class LeadsService {
         stageCounts[normalizedStage]++;
       }
 
-      // Conta leads que chegaram na fase de agendamento ou além
-      const teveAgendamento =
-        lead.meetingDate !== null ||
-        ['REUNIAO_AGENDADA', 'NO_SHOW', 'PROPOSTA_ENVIADA', 'FECHADO', 'GANHO'].includes(lead.stage as any);
-
-      if (teveAgendamento) {
-        agendadosCount++;
-      }
-
-      if (lead.stage === LeadStage.NO_SHOW) {
-        noShowCount++;
-      }
-
-      // Reuniões que foram efetivamente realizadas (passaram de no-show para proposta ou fechamento)
-      if (['PROPOSTA_ENVIADA', 'FECHADO', 'GANHO'].includes(lead.stage as any)) {
-        reunioesRealizadasCount++;
-      }
-
       if (lead.stage === LeadStage.FECHADO || (lead.stage as any) === 'GANHO') {
-        fechadosCount++;
         if (lead.dealValue) closedRevenueValue += lead.dealValue;
       }
 
-      // Pipeline ativo (proposta ou reunião)
       if (['REUNIAO_AGENDADA', 'PROPOSTA_ENVIADA'].includes(lead.stage as any)) {
         if (lead.dealValue) totalPipelineValue += lead.dealValue;
+      }
+    }
+
+    // Filtro temporal para eventos do histórico
+    const historyWhere: any = {
+      isReverted: false,
+    };
+
+    if (origemTipo) {
+      historyWhere.lead = { origemTipo };
+    }
+
+    if (startDateTime || endDateTime) {
+      historyWhere.createdAt = {};
+      if (startDateTime) historyWhere.createdAt.gte = startDateTime;
+      if (endDateTime) historyWhere.createdAt.lte = endDateTime;
+    }
+
+    const [scheduledEventsCount, noShowEventsCount, proposalEventsCount, closedEventsCount] = await Promise.all([
+      this.prisma.leadStageHistory.count({
+        where: {
+          ...historyWhere,
+          toStage: LeadStage.REUNIAO_AGENDADA,
+        },
+      }),
+      this.prisma.leadStageHistory.count({
+        where: {
+          ...historyWhere,
+          toStage: LeadStage.NO_SHOW,
+        },
+      }),
+      this.prisma.leadStageHistory.count({
+        where: {
+          ...historyWhere,
+          toStage: LeadStage.PROPOSTA_ENVIADA,
+        },
+      }),
+      this.prisma.leadStageHistory.count({
+        where: {
+          ...historyWhere,
+          toStage: LeadStage.FECHADO,
+        },
+      }),
+    ]);
+
+    let agendadosCount = scheduledEventsCount;
+    let noShowCount = noShowEventsCount;
+    let fechadosCount = closedEventsCount;
+    let reunioesRealizadasCount = proposalEventsCount + closedEventsCount;
+
+    // Fallback de compatibilidade apenas se não houver filtro e nenhum evento histórico foi registrado ainda
+    if (!startDateTime && !endDateTime && agendadosCount === 0 && noShowCount === 0) {
+      for (const lead of leads) {
+        const teveAgendamento =
+          lead.meetingDate !== null ||
+          ['REUNIAO_AGENDADA', 'NO_SHOW', 'PROPOSTA_ENVIADA', 'FECHADO', 'GANHO'].includes(lead.stage as any);
+        if (teveAgendamento) agendadosCount++;
+        if (lead.stage === LeadStage.NO_SHOW) noShowCount++;
+        if (['PROPOSTA_ENVIADA', 'FECHADO', 'GANHO'].includes(lead.stage as any)) reunioesRealizadasCount++;
+        if (lead.stage === LeadStage.FECHADO || (lead.stage as any) === 'GANHO') fechadosCount++;
       }
     }
 
@@ -324,6 +466,10 @@ export class LeadsService {
       totalLeads,
       totalInbound,
       totalOutbound,
+      agendadosCount,
+      noShowCount,
+      fechadosCount,
+      reunioesRealizadasCount,
       bookingRate,
       noShowRate,
       winRate,
