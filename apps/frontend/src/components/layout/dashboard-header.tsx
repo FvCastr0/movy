@@ -39,7 +39,7 @@ export function DashboardHeader({
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
         {/* Marca & Status Operacional */}
         <div className="flex items-center gap-6">
-          <Link href="/leads" className="flex items-center gap-2.5 group">
+          <Link href="/crm" className="flex items-center gap-2.5 group">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand font-black text-white text-base tracking-tighter shadow-md shadow-brand/20 group-hover:bg-brand-hover transition-colors">
               M
             </div>
@@ -50,47 +50,51 @@ export function DashboardHeader({
             </div>
           </Link>
 
-          {/* Navegação entre Módulos: Leads (SDR) vs CRM Comercial vs Clientes (Operação) */}
+          {/* Navegação entre Módulos: Geral vs CRM Comercial vs Clientes (Operação) vs Financeiro */}
           <nav className="flex items-center gap-1 pl-2 border-l border-white/10">
             <Link
-              href="/crm"
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${pathname.startsWith('/crm')
+              href="/"
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
+                pathname === '/'
                   ? 'bg-brand/15 text-brand border border-brand/30'
                   : 'text-text-muted hover:text-text-primary hover:bg-white/5'
-                }`}
+              }`}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+              Visão Geral
+            </Link>
+            <Link
+              href="/crm"
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
+                pathname.startsWith('/crm')
+                  ? 'bg-brand/15 text-brand border border-brand/30'
+                  : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+              }`}
             >
               <Briefcase className="h-3.5 w-3.5" />
               CRM Comercial
             </Link>
             <Link
-              href="/finance"
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${pathname.startsWith('/finance')
-                  ? 'bg-brand/15 text-brand border border-brand/30'
-                  : 'text-text-muted hover:text-text-primary hover:bg-white/5'
-                }`}
-            >
-              <CircleDollarSign className="h-3.5 w-3.5" />
-              Financeiro
-            </Link>
-            <Link
-              href="/leads"
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${pathname.startsWith('/leads')
-                  ? 'bg-brand/15 text-brand border border-brand/30'
-                  : 'text-text-muted hover:text-text-primary hover:bg-white/5'
-                }`}
-            >
-              <Users className="h-3.5 w-3.5" />
-              Funil Leads
-            </Link>
-            <Link
               href="/clients"
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${pathname.startsWith('/clients')
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
+                pathname.startsWith('/clients')
                   ? 'bg-brand/15 text-brand border border-brand/30'
                   : 'text-text-muted hover:text-text-primary hover:bg-white/5'
-                }`}
+              }`}
             >
               <UserCheck className="h-3.5 w-3.5" />
               Clientes Ativos
+            </Link>
+            <Link
+              href="/finance"
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
+                pathname.startsWith('/finance')
+                  ? 'bg-brand/15 text-brand border border-brand/30'
+                  : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+              }`}
+            >
+              <CircleDollarSign className="h-3.5 w-3.5" />
+              Financeiro
             </Link>
           </nav>
 

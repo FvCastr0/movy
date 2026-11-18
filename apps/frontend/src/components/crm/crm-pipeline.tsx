@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { Lead, LeadStage } from '@/types';
 import { CrmStageModal } from './crm-stage-modal';
 import {
@@ -13,6 +14,7 @@ import {
   XCircle,
   ExternalLink,
   MessageCircle,
+  FileText,
 } from 'lucide-react';
 
 interface CrmPipelineProps {
@@ -193,9 +195,13 @@ export function CrmPipeline({ leads, onStageChange }: CrmPipelineProps) {
                       <div className="flex items-start gap-2">
                         <Store className="h-3.5 w-3.5 shrink-0 text-text-muted mt-0.5" />
                         <div className="min-w-0 flex-1">
-                          <h4 className="text-xs font-bold text-text-primary truncate">
+                          <Link
+                            href={`/crm/${lead.id}`}
+                            className="text-xs font-bold text-text-primary truncate block hover:text-brand transition-colors"
+                            title="Abrir ficha do lead"
+                          >
                             {lead.deliveryNome}
-                          </h4>
+                          </Link>
                           <p className="text-[11px] text-text-muted truncate">
                             {lead.nome} • {lead.segmento}
                           </p>
@@ -224,17 +230,30 @@ export function CrmPipeline({ leads, onStageChange }: CrmPipelineProps) {
                       )}
 
                       {/* Ações Rápidas no Card */}
-                      <div className="mt-3 flex items-center justify-between border-t border-white/5 pt-2 text-xs">
-                        <a
-                          href={`https://wa.me/${cleanWhatsappNumber(lead.whatsapp)}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="flex items-center gap-1 text-[11px] font-medium text-emerald-400 hover:text-emerald-300 transition-colors"
-                        >
-                          <MessageCircle className="h-3 w-3" />
-                          WhatsApp
-                        </a>
+                      <div className="mt-3 flex items-center justify-between gap-1.5 border-t border-white/5 pt-2 text-xs">
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={`https://wa.me/${cleanWhatsappNumber(lead.whatsapp)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex items-center gap-1 text-[11px] font-medium text-emerald-400 hover:text-emerald-300 transition-colors"
+                            title="Chamar no WhatsApp"
+                          >
+                            <MessageCircle className="h-3 w-3" />
+                            <span className="hidden sm:inline">WhatsApp</span>
+                          </a>
+
+                          <Link
+                            href={`/crm/${lead.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex items-center gap-1 rounded bg-white/5 hover:bg-brand/20 hover:text-brand px-2 py-0.5 text-[10px] font-semibold text-text-muted transition-colors border border-white/5 hover:border-brand/30"
+                            title="Abrir Ficha de Qualificação do Lead"
+                          >
+                            <FileText className="h-3 w-3 text-brand" />
+                            <span>Ficha</span>
+                          </Link>
+                        </div>
 
                         {/* Seletor rápido de estágio */}
                         <select

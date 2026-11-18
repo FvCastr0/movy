@@ -4,6 +4,7 @@ import { MetaAdsService, MetaAdsMetrics } from '../meta-ads/meta-ads.service';
 import { PdfGeneratorService } from './pdf-generator.service';
 import { EvolutionService } from '../evolution/evolution.service';
 import { CreateReportDto } from './dto/create-report.dto';
+import { AutoGenerateReportDto } from './dto/auto-generate-report.dto';
 import * as fs from 'fs';
 
 @Injectable()
@@ -113,6 +114,8 @@ export class ReportsService {
         metaCpc: metaMetrics.cpc,
         metaConversas: metaMetrics.conversas,
         metaCostPerChat: metaMetrics.costPerChat,
+        metaRoas: dto.metaRoas ?? metaMetrics.roas ?? 0,
+        metaCpr: dto.metaCpr ?? metaMetrics.cpr ?? metaMetrics.costPerChat ?? 0,
         faturamentoTotal: dto.faturamentoTotal ?? null,
         pedidosTotais: dto.pedidosTotais ?? null,
         analiseGestor: dto.analiseGestor?.trim() || null,
@@ -142,6 +145,79 @@ export class ReportsService {
     });
 
     // 4. Salva a URL do PDF no relatório
+    return this.prisma.weeklyReport.update({
+      where: { id: report.id },
+      data: { pdfUrl },
+    });
+  }
+
+  /**
+   * Gera o relatório semanal puxando 100% dos dados da Meta Ads para as datas indicadas,
+   * sem necessidade de digitação manual de números.
+   */
+  async generateAutomatedReport(clientId: string, dto: AutoGenerateReportDto) {
+    const client = await this.prisma.client.findUnique({
+      where: { id: clientId },
+    });
+
+    if (!client) {
+      throw new NotFoundException(`Cliente com ID ${clientId} não encontrado.`);
+    }
+
+    const startDate = new Date(dto.weekStartDate);
+    const endDate = new Date(dto.weekEndDate);
+
+    // Consulta Meta Ads para a semana exata
+    const metaMetrics = await this.metaAdsService.getWeeklyInsights(
+      client.metaAdAccountId,
+      startDate,
+      endDate,
+      false
+    );
+
+    // Persiste o relatório gerado
+    const report = await this.prisma.weeklyReport.create({
+      data: {
+        clientId: client.id,
+        weekStartDate: startDate,
+        weekEndDate: endDate,
+        metaSpend: metaMetrics.spend,
+        metaImpressions: metaMetrics.impressions,
+        metaClicks: metaMetrics.clicks,
+        metaCtr: metaMetrics.ctr,
+        metaCpc: metaMetrics.cpc,
+        metaConversas: metaMetrics.conversas,
+        metaCostPerChat: metaMetrics.costPerChat,
+        metaRoas: metaMetrics.roas || 0,
+        metaCpr: metaMetrics.cpr || metaMetrics.costPerChat || 0,
+        faturamentoTotal: dto.faturamentoTotal ?? null,
+        pedidosTotais: dto.pedidosTotais ?? null,
+        analiseGestor: dto.analiseGestor?.trim() || null,
+        proximasAcoes: dto.proximasAcoes?.trim() || null,
+      },
+    });
+
+    // Renderiza PDF
+    const pdfUrl = await this.pdfGeneratorService.generateWeeklyReportPdf(report.id, {
+      deliveryNome: client.deliveryNome,
+      clienteNome: client.nome,
+      cidade: client.cidade,
+      segmento: client.segmento,
+      weekStartDate: startDate,
+      weekEndDate: endDate,
+      metaSpend: metaMetrics.spend,
+      metaImpressions: metaMetrics.impressions,
+      metaClicks: metaMetrics.clicks,
+      metaCtr: metaMetrics.ctr,
+      metaCpc: metaMetrics.cpc,
+      metaConversas: metaMetrics.conversas,
+      metaCostPerChat: metaMetrics.costPerChat,
+      faturamentoTotal: dto.faturamentoTotal,
+      pedidosTotais: dto.pedidosTotais,
+      analiseGestor: dto.analiseGestor,
+      proximasAcoes: dto.proximasAcoes,
+    });
+
     return this.prisma.weeklyReport.update({
       where: { id: report.id },
       data: { pdfUrl },

@@ -2,6 +2,7 @@ import { Controller, Post, Get, Delete, Param, Body, Query, Res, UseGuards } fro
 import { Response } from 'express';
 import { ReportsService } from './reports.service';
 import { CreateReportDto } from './dto/create-report.dto';
+import { AutoGenerateReportDto } from './dto/auto-generate-report.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('reports')
@@ -22,6 +23,15 @@ export class ReportsController {
   @Post('generate')
   async generateReport(@Body() dto: CreateReportDto) {
     return this.reportsService.createWeeklyReport(dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('clients/:clientId/auto-generate')
+  async autoGenerateReport(
+    @Param('clientId') clientId: string,
+    @Body() dto: AutoGenerateReportDto
+  ) {
+    return this.reportsService.generateAutomatedReport(clientId, dto);
   }
 
   @Get(':id/pdf')

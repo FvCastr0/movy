@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { FinanceService } from './finance.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { ClientStatus, PaymentStatus, PlanCycle, PlanType } from '@prisma/client';
+import { ClientStatus, PaymentStatus, PlanCycle, PlanType, ExpenseCategory } from '@prisma/client';
 import { NotFoundException } from '@nestjs/common';
 
 describe('FinanceService - Módulo Financeiro', () => {
@@ -16,6 +16,12 @@ describe('FinanceService - Módulo Financeiro', () => {
     contract: {
       findUnique: jest.fn(),
       upsert: jest.fn(),
+      update: jest.fn(),
+    },
+    expense: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
       update: jest.fn(),
     },
   };
@@ -148,6 +154,105 @@ describe('FinanceService - Módulo Financeiro', () => {
 
       expect(res.id).toBe('contract-1');
       expect(prisma.contract.upsert).toHaveBeenCalled();
+    });
+  });
+
+  describe('Expenses (Despesas da Agência)', () => {
+    it('deve criar uma nova despesa com sucesso', async () => {
+      const dto = {
+        description: 'SDR Prestador',
+        category: ExpenseCategory.EQUIPE,
+        amount: 2500,
+        dueDate: '2026-11-05',
+        isRecurring: true,
+      };
+
+      mockPrismaService.expense.create.mockResolvedValue({
+        id: 'exp-1',
+        ...dto,
+        dueDate: new Date(dto.dueDate),
+        isActive: true,
+      });
+
+      const res = await service.createExpense(dto);
+      expect(res.id).toBe('exp-1');
+      expect(prisma.expense.create).toHaveBeenCalled();
+    });
+
+    it('deve realizar soft delete desativando a despesa (isActive: false)', async () => {
+      mockPrismaService.expense.findUnique.mockResolvedValue({ id: 'exp-1', isActive: true });
+      mockPrismaService.expense.update.mockResolvedValue({ id: 'exp-1', isActive: false });
+
+      const res = await service.deleteExpense('exp-1');
+      expect(res.isActive).toBe(false);
+      expect(prisma.expense.update).toHaveBeenCalledWith({
+        where: { id: 'exp-1' },
+        data: { isActive: false },
+      });
+    });
+  });
+
+  describe('getMonthlyClosings (Fechamento Mensal MoM)', () => {
+    it('deve calcular a DRE dos últimos 6 meses com receitas, despesas e lucro líquido', async () => {
+      const now = new Date();
+      const mockClients = [
+        {
+          id: 'c1',
+          contract: {
+            mrrEquivalent: 2000,
+            totalValue: 2000,
+            setupValue: 500,
+            cycle: PlanCycle.MENSAL,
+            operationalCost: 150,
+            startDate: new Date(now.getFullYear(), now.getMonth() - 5, 1),
+            endDate: null,
+          },
+        },
+      ];
+
+      const mockExpenses = [
+        {
+          id: 'e1',
+          description: 'Salário SDR',
+          category: ExpenseCategory.EQUIPE,
+          amount: 1000,
+          dueDate: new Date(now.getFullYear(), now.getMonth() - 5, 5),
+          isRecurring: true,
+          isActive: true,
+        },
+        {
+          id: 'e2',
+          description: 'CRM SaaS',
+          category: ExpenseCategory.FERRAMENTAS_SAAS,
+          amount: 200,
+          dueDate: new Date(now.getFullYear(), now.getMonth() - 5, 10),
+          isRecurring: true,
+          isActive: true,
+        },
+      ];
+
+      mockPrismaService.client.findMany.mockResolvedValue(mockClients);
+      mockPrismaService.expense.findMany.mockResolvedValue(mockExpenses);
+
+      const result = await service.getMonthlyClosings(6);
+
+      expect(result.periods).toHaveLength(6);
+      const currentPeriod = result.periods[result.periods.length - 1];
+
+      // Verificação do mês atual
+      expect(currentPeriod.revenue.mrrRecognized).toBe(2000);
+      expect(currentPeriod.cogsClients).toBe(150);
+      expect(currentPeriod.expenses.team).toBe(1000);
+      expect(currentPeriod.expenses.tools).toBe(200);
+      expect(currentPeriod.expenses.total).toBe(1200);
+
+      // Lucro Líquido = 2000 (MRR) - 150 (COGS) - 1200 (Despesas) = 650
+      expect(currentPeriod.netProfitCompetence).toBe(650);
+      // Margem Líquida = (650 / 2000) * 100 = 32.5%
+      expect(currentPeriod.netMarginPercent).toBe(32.5);
+
+      expect(result.totals.totalRevenueCompetence).toBe(12000); // 2000 * 6
+      expect(result.totals.totalExpenses).toBe(7200); // 1200 * 6
     });
   });
 });

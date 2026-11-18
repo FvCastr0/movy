@@ -1,9 +1,24 @@
-import { Controller, Get, Put, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { FinanceService } from './finance.service';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdatePaymentStatusDto } from './dto/update-payment-status.dto';
+import { CreateExpenseDto } from './dto/create-expense.dto';
+import { UpdateExpenseDto } from './dto/update-expense.dto';
+import { MonthlyClosingQueryDto } from './dto/monthly-closing-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { PaymentStatus } from '@prisma/client';
+import { PaymentStatus, ExpenseCategory } from '@prisma/client';
 
 @UseGuards(JwtAuthGuard)
 @Controller('finance')
@@ -37,5 +52,46 @@ export class FinanceController {
     @Body() dto: UpdatePaymentStatusDto,
   ) {
     return this.financeService.updatePaymentStatus(clientId, dto);
+  }
+
+  // ==========================================
+  // DESPESAS DA AGÊNCIA (EXPENSES)
+  // ==========================================
+
+  @Get('expenses')
+  async getExpenses(
+    @Query('category') category?: ExpenseCategory,
+    @Query('isActive') isActive?: string,
+  ) {
+    const activeFilter = isActive === undefined ? true : isActive === 'true';
+    return this.financeService.getExpenses(category, activeFilter);
+  }
+
+  @Post('expenses')
+  async createExpense(@Body() dto: CreateExpenseDto) {
+    return this.financeService.createExpense(dto);
+  }
+
+  @Patch('expenses/:id')
+  async updateExpense(
+    @Param('id') id: string,
+    @Body() dto: UpdateExpenseDto,
+  ) {
+    return this.financeService.updateExpense(id, dto);
+  }
+
+  @Delete('expenses/:id')
+  async deleteExpense(@Param('id') id: string) {
+    return this.financeService.deleteExpense(id);
+  }
+
+  // ==========================================
+  // FECHAMENTO MENSAL E DRE (MoM)
+  // ==========================================
+
+  @Get('monthly-closings')
+  async getMonthlyClosings(@Query() query: MonthlyClosingQueryDto) {
+    const months = query.months || 6;
+    return this.financeService.getMonthlyClosings(months);
   }
 }

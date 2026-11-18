@@ -114,6 +114,8 @@ export interface WeeklyReport {
   metaCpc: number;
   metaConversas: number;
   metaCostPerChat: number;
+  metaRoas?: number | null;
+  metaCpr?: number | null;
   faturamentoTotal?: number | null;
   pedidosTotais?: number | null;
   analiseGestor?: string | null;
@@ -144,6 +146,24 @@ export interface Client {
   } | null;
   contract?: Contract | null;
   weeklyReports?: WeeklyReport[];
+
+  // Onboarding & Performance
+  onboardingStage?: OnboardingStage;
+  onboardingStageUpdatedAt?: string;
+  metaAccessGranted?: boolean;
+  pageAccessGranted?: boolean;
+  instagramAccessGranted?: boolean;
+  pixelCreated?: boolean;
+  videosReceived?: boolean;
+  creativesApproved?: boolean;
+  hoursInStage?: number;
+  isDelayed?: boolean;
+
+  // Credenciais Meta Ads (Segurança & Expiração)
+  metaTokenStatus?: 'NOT_CONFIGURED' | 'ACTIVE' | 'EXPIRED' | 'INVALID';
+  metaTokenExpiresAt?: string | null;
+  metaLastSyncAt?: string | null;
+
   createdAt: string;
   updatedAt: string;
 }
@@ -193,4 +213,214 @@ export interface FinanceMetrics {
   totalInadimplenteClientes: number;
   churnRatePercent: number;
 }
+
+export type OnboardingStage =
+  | 'BRIEFING_PREENCHIDO'
+  | 'ACESSOS_LIBERADOS'
+  | 'CRIATIVOS_APROVADOS'
+  | 'CAMPANHAS_NO_AR'
+  | 'CONCLUIDO';
+
+export interface RiskStatus {
+  clientId: string;
+  deliveryNome: string;
+  currentBalance: number;
+  avgDailySpend: number;
+  weekendSpendRequired: number;
+  isLowBalance: boolean;
+  cpaRecent: number;
+  cpaBaseline: number;
+  cpaDiffPercent: number;
+  isCpaSpike: boolean;
+  hasMetrics: boolean;
+  recentMetrics: {
+    date: string;
+    spend: number;
+    balance: number;
+    conversas: number;
+    cpa: number;
+  }[];
+}
+
+export interface ClientRevenueReport {
+  id: string;
+  clientId: string;
+  periodStart: string;
+  periodEnd: string;
+  grossRevenue: number;
+  ordersCount: number;
+  source: string;
+  filename?: string | null;
+  createdAt: string;
+}
+
+export interface RevenueReportResponse {
+  success: boolean;
+  report: ClientRevenueReport;
+  grossRevenue: number;
+  ordersCount: number;
+  ticketMedioPedidos: number;
+}
+
+export interface MetaCredentialsStatus {
+  clientId: string;
+  deliveryNome: string;
+  metaAdAccountId?: string | null;
+  hasToken: boolean;
+  status: 'NOT_CONFIGURED' | 'ACTIVE' | 'EXPIRED' | 'INVALID';
+  createdAt?: string | null;
+  expiresAt?: string | null;
+  daysRemaining: number;
+  isNearExpiry: boolean;
+  isExpired: boolean;
+  lastSyncAt?: string | null;
+}
+
+export interface MetaAccountInsights {
+  clientId: string;
+  deliveryNome: string;
+  adAccountId: string;
+  periodStart: string;
+  periodEnd: string;
+  spend: number;
+  impressions: number;
+  clicks: number;
+  ctr: number;
+  cpc: number;
+  conversas: number;
+  cpa: number;
+  cpr?: number;
+  roas?: number;
+  cached: boolean;
+  cachedAt?: string;
+  cacheExpiresInSeconds?: number;
+  cooldownWarning?: string;
+}
+
+export interface SaveMetaConfigInput {
+  metaAdAccountId: string;
+  accessToken: string;
+}
+
+export type LeadPeriodDays = 14 | 30 | 90 | 180;
+
+export interface LeadInflowItem {
+  date: string;       // YYYY-MM-DD
+  label: string;      // DD/MM
+  dayOfWeek: string;  // Seg, Ter, Qua...
+  count: number;
+}
+
+export interface DashboardOverview {
+  financial: {
+    totalMrr: number;
+    activeContracts: number;
+    averageTicket: number;
+    renewalsNext30Days: number;
+    delinquentCount: number;
+  };
+  commercial: {
+    totalLeads: number;
+    pipelineValue: number;
+    conversionRate: number;
+    leadsByStage: Record<string, number>;
+    leadInflow: LeadInflowItem[];
+    inflowTotal: number;
+    inflowAverageDaily: number;
+    peakDay: { date: string; count: number } | null;
+  };
+  operations: {
+    activeClients: number;
+    pausedClients: number;
+    churnedClients: number;
+    pendingWeeklyReports: number;
+  };
+  clientMetaAggregate: {
+    period: 'month' | 'all_time';
+    totalSpend: number;
+    totalChats: number;
+    averageCpr: number;
+    averageRoas: number;
+    activeAdAccounts: number;
+    sinceDate?: string | null;
+  };
+  agencyMeta: {
+    configured: boolean;
+    adAccountId?: string | null;
+    spend: number;
+    leadsGenerated: number;
+    costPerLead: number;
+    impressions: number;
+    clicks: number;
+    status: 'ACTIVE' | 'NOT_CONFIGURED';
+  };
+  recentAlerts: Array<{
+    id: string;
+    type: 'critical' | 'warning' | 'info';
+    category: 'balance' | 'contract' | 'report';
+    title: string;
+    description: string;
+    clientId?: string;
+    clientName?: string;
+    createdAt: string;
+  }>;
+}
+
+export type ExpenseCategory = 'EQUIPE' | 'FERRAMENTAS_SAAS' | 'MARKETING_PROPRIO' | 'OUTROS';
+
+export interface Expense {
+  id: string;
+  description: string;
+  category: ExpenseCategory;
+  amount: number;
+  dueDate: string;
+  isRecurring: boolean;
+  isActive: boolean;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateExpenseInput {
+  description: string;
+  category: ExpenseCategory;
+  amount: number;
+  dueDate: string;
+  isRecurring?: boolean;
+  notes?: string;
+}
+
+export interface MonthFinancialStatement {
+  monthKey: string;
+  label: string;
+  revenue: {
+    mrrRecognized: number;
+    cashInflow: number;
+  };
+  cogsClients: number;
+  expenses: {
+    team: number;
+    tools: number;
+    marketing: number;
+    others: number;
+    total: number;
+  };
+  netProfitCompetence: number;
+  netProfitCash: number;
+  netMarginPercent: number;
+}
+
+export interface MonthlyClosingSummary {
+  periods: MonthFinancialStatement[];
+  totals: {
+    totalRevenueCompetence: number;
+    totalRevenueCash: number;
+    totalExpenses: number;
+    totalNetProfitCompetence: number;
+    totalNetProfitCash: number;
+    averageMarginPercent: number;
+  };
+}
+
+
 

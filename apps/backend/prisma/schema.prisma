@@ -199,6 +199,27 @@ enum PaymentStatus {
   INADIMPLENTE
 }
 
+enum OnboardingStage {
+  BRIEFING_PREENCHIDO
+  ACESSOS_LIBERADOS
+  CRIATIVOS_APROVADOS
+  CAMPANHAS_NO_AR
+  CONCLUIDO
+}
+
+enum AlertType {
+  LOW_BALANCE
+  CPA_SPIKE
+  ONBOARDING_DELAY
+  INSTANCE_DOWN
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
 model Client {
   id                   String        @id @default(uuid())
   nome                 String
@@ -215,12 +236,34 @@ model Client {
   // Configuração Meta Ads (preenchido pelo time interno da MOVY)
   metaAdAccountId      String?       // ex: act_123456789
   metaPixelId          String?
+  metaAccessTokenEnc   String?       // Token cifrado em AES-256-GCM (iv:authTag:encryptedData)
+  metaTokenStatus      String?       @default("NOT_CONFIGURED") // NOT_CONFIGURED | ACTIVE | EXPIRED | INVALID
+  metaTokenCreatedAt   DateTime?     // Data do cadastro (tokens de usuário duram até ~60 dias)
+  metaTokenExpiresAt   DateTime?     // Data limite estimada de renovação
+  metaLastSyncAt       DateTime?     // Data do último snapshot obtido com sucesso
 
   accountManagerId     String?
   accountManager       User?         @relation("AccountManagerClients", fields: [accountManagerId], references: [id], onDelete: SetNull)
 
   weeklyReports        WeeklyReport[]
   contract             Contract?
+
+  // Tracker de Onboarding & SLA 48h
+  onboardingStage          OnboardingStage       @default(BRIEFING_PREENCHIDO)
+  onboardingStageUpdatedAt DateTime              @default(now())
+
+  // Checklist de Ativos & Produção
+  metaAccessGranted        Boolean               @default(false)
+  pageAccessGranted        Boolean               @default(false)
+  instagramAccessGranted   Boolean               @default(false)
+  pixelCreated             Boolean               @default(false)
+  videosReceived           Boolean               @default(false)
+  creativesApproved        Boolean               @default(false)
+
+  // Relações Operacionais
+  adAccountMetrics         AdAccountMetrics[]
+  revenueReports           ClientRevenueReport[]
+  alerts                   SystemAlert[]
 
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
@@ -244,6 +287,8 @@ model WeeklyReport {
   metaCpc          Float    @default(0.0)
   metaConversas    Int      @default(0)
   metaCostPerChat  Float    @default(0.0)
+  metaRoas         Float?   @default(0.0) // Retorno sobre gasto em anúncios
+  metaCpr          Float?   @default(0.0) // Custo por resultado (conversas ou pedidos)
 
   // Métricas de Vendas/Delivery
   faturamentoTotal Float?
@@ -289,4 +334,81 @@ model Contract {
 
   @@map("contracts")
 }
+
+model AdAccountMetrics {
+  id          String   @id @default(uuid())
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  date        DateTime // Data da captura diária
+  spend       Float    @default(0.0) // Gasto do dia
+  balance     Float    @default(0.0) // Saldo restante na conta de anúncios
+  impressions Int      @default(0)
+  clicks      Int      @default(0)
+  conversas   Int      @default(0)
+  cpa         Float    @default(0.0) // Custo por conversa / clique cardápio
+
+  createdAt   DateTime @default(now())
+
+  @@map("ad_account_metrics")
+}
+
+model ClientRevenueReport {
+  id           String   @id @default(uuid())
+  clientId     String
+  client       Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  periodStart  DateTime
+  periodEnd    DateTime
+  grossRevenue Float    // Faturamento bruto
+  ordersCount  Int      // Total de pedidos
+  source       String   @default("CSV_IMPORT") // MANUAL ou CSV_IMPORT
+  filename     String?
+
+  createdAt    DateTime @default(now())
+
+  @@map("client_revenue_reports")
+}
+
+model SystemAlert {
+  id        String        @id @default(uuid())
+  clientId  String?
+  client    Client?       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  type      AlertType
+  severity  AlertSeverity @default(WARNING)
+  message   String
+  resolved  Boolean       @default(false)
+
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@map("system_alerts")
+}
+
+enum ExpenseCategory {
+  EQUIPE
+  FERRAMENTAS_SAAS
+  MARKETING_PROPRIO
+  OUTROS
+}
+
+model Expense {
+  id          String          @id @default(uuid())
+  description String
+  category    ExpenseCategory
+  amount      Float
+  dueDate     DateTime
+  isRecurring Boolean         @default(false)
+  isActive    Boolean         @default(true)
+  notes       String?
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([category, isActive])
+  @@index([dueDate])
+  @@map("expenses")
+}
+
 

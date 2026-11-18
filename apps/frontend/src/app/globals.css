@@ -4,17 +4,18 @@
 
 @layer base {
   :root {
-    --canvas: #0A0A0A;
-    --surface-1: #121212;
+    --canvas: #09090B;
+    --surface-1: #111114;
     --surface-2: #18181B;
     --surface-inset: #0E0E10;
+    --surface-pill: rgba(15, 15, 18, 0.72);
     --accent: #E50914;
     --accent-hover: #CC0812;
     --text-primary: #FAFAFA;
     --text-secondary: #A1A1AA;
     --text-muted: #71717A;
-    --border-subtle: rgba(255, 255, 255, 0.08);
-    --border-emphasis: rgba(255, 255, 255, 0.16);
+    --border-subtle: rgba(255, 255, 255, 0.07);
+    --border-emphasis: rgba(255, 255, 255, 0.14);
   }
 
   body {
@@ -23,7 +24,27 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    overflow-x: hidden;
   }
+}
+
+/* Custom scrollbar ultra-fino para manter o minimalismo */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
 }
 
 /* Tabular numbers utilitária para métricas e contadores */

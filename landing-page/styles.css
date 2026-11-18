@@ -594,6 +594,12 @@ select {
   align-items: center;
 }
 
+@media (max-width: 765px) {
+  .authority-section::before {
+    filter: blur(2px) grayscale(0%);
+  }
+}
+
 .authority-body {
   margin-top: 20px;
   margin-bottom: 28px;

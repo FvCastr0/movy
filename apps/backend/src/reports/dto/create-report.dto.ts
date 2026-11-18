@@ -60,6 +60,18 @@ export class CreateReportDto {
   @Type(() => Number)
   @IsNumber()
   @Min(0)
+  metaRoas?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  metaCpr?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
   faturamentoTotal?: number;
 
   @IsOptional()

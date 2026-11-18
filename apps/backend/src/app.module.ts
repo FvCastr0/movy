@@ -9,6 +9,8 @@ import { ClientsModule } from './clients/clients.module';
 import { MetaAdsModule } from './meta-ads/meta-ads.module';
 import { ReportsModule } from './reports/reports.module';
 import { FinanceModule } from './finance/finance.module';
+import { OnboardingOpsModule } from './onboarding-ops/onboarding-ops.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -26,6 +28,8 @@ import { AppController } from './app.controller';
     MetaAdsModule,
     ReportsModule,
     FinanceModule,
+    OnboardingOpsModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [],

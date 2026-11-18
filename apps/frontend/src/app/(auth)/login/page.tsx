@@ -9,7 +9,7 @@ import { Lock, Mail, ArrowRight, AlertCircle, ShieldCheck, Zap } from 'lucide-re
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectPath = searchParams.get('from') || '/leads';
+  const redirectPath = searchParams.get('from') || '/';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

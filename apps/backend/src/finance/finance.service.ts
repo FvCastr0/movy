@@ -3,7 +3,13 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdatePaymentStatusDto } from './dto/update-payment-status.dto';
 import { FinanceMetricsResponseDto } from './dto/finance-metrics-response.dto';
-import { ClientStatus, PaymentStatus } from '@prisma/client';
+import { CreateExpenseDto } from './dto/create-expense.dto';
+import { UpdateExpenseDto } from './dto/update-expense.dto';
+import {
+  MonthFinancialStatement,
+  MonthlyClosingSummary,
+} from './dto/monthly-closing-response.dto';
+import { ClientStatus, PaymentStatus, ExpenseCategory, PlanCycle } from '@prisma/client';
 
 @Injectable()
 export class FinanceService {
@@ -225,5 +231,240 @@ export class FinanceService {
         notes: dto.notes !== undefined ? dto.notes : contract.notes,
       },
     });
+  }
+
+  // ==========================================
+  // GESTÃO DE DESPESAS DA AGÊNCIA (EXPENSES)
+  // ==========================================
+
+  async createExpense(dto: CreateExpenseDto) {
+    this.logger.log(`Criando despesa: ${dto.description} - R$ ${dto.amount} (${dto.category})`);
+    return this.prisma.expense.create({
+      data: {
+        description: dto.description,
+        category: dto.category,
+        amount: dto.amount,
+        dueDate: new Date(dto.dueDate),
+        isRecurring: dto.isRecurring || false,
+        notes: dto.notes || null,
+      },
+    });
+  }
+
+  async getExpenses(category?: ExpenseCategory, isActive: boolean = true) {
+    const where: any = { isActive };
+    if (category) {
+      where.category = category;
+    }
+
+    return this.prisma.expense.findMany({
+      where,
+      orderBy: [{ dueDate: 'desc' }, { createdAt: 'desc' }],
+    });
+  }
+
+  async updateExpense(id: string, dto: UpdateExpenseDto) {
+    const existing = await this.prisma.expense.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`Despesa com ID ${id} não foi encontrada.`);
+    }
+
+    return this.prisma.expense.update({
+      where: { id },
+      data: {
+        description: dto.description !== undefined ? dto.description : existing.description,
+        category: dto.category !== undefined ? dto.category : existing.category,
+        amount: dto.amount !== undefined ? dto.amount : existing.amount,
+        dueDate: dto.dueDate ? new Date(dto.dueDate) : existing.dueDate,
+        isRecurring: dto.isRecurring !== undefined ? dto.isRecurring : existing.isRecurring,
+        isActive: dto.isActive !== undefined ? dto.isActive : existing.isActive,
+        notes: dto.notes !== undefined ? dto.notes : existing.notes,
+      },
+    });
+  }
+
+  async deleteExpense(id: string) {
+    const existing = await this.prisma.expense.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`Despesa com ID ${id} não foi encontrada.`);
+    }
+
+    // Soft delete para preservar histórico financeiro
+    return this.prisma.expense.update({
+      where: { id },
+      data: { isActive: false },
+    });
+  }
+
+  // ==========================================
+  // MOTOR DE FECHAMENTO MENSAL E DRE (MoM)
+  // ==========================================
+
+  async getMonthlyClosings(monthsCount: number = 6): Promise<MonthlyClosingSummary> {
+    const count = Math.min(Math.max(monthsCount, 1), 24);
+    const today = new Date();
+
+    // 1. Carregar contratos e clientes
+    const clients = await this.prisma.client.findMany({
+      include: { contract: true },
+    });
+
+    // 2. Carregar despesas ativas
+    const allExpenses = await this.prisma.expense.findMany({
+      where: { isActive: true },
+    });
+
+    const monthNames = [
+      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+
+    const periods: MonthFinancialStatement[] = [];
+
+    let sumRevComp = 0;
+    let sumRevCash = 0;
+    let sumExpTotal = 0;
+    let sumProfitComp = 0;
+    let sumProfitCash = 0;
+
+    // Gerar da data mais antiga até o mês atual
+    for (let i = count - 1; i >= 0; i--) {
+      const targetDate = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const targetYear = targetDate.getFullYear();
+      const targetMonth = targetDate.getMonth();
+
+      const monthStart = new Date(targetYear, targetMonth, 1, 0, 0, 0);
+      const monthEnd = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59, 999);
+      const monthKey = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}`;
+      const label = `${monthNames[targetMonth]} ${targetYear}`;
+
+      let mrrRecognized = 0;
+      let cashInflow = 0;
+      let cogsClients = 0;
+
+      // Calcular entradas dos clientes
+      for (const client of clients) {
+        const contract = client.contract;
+        if (!contract) continue;
+
+        const contractStart = new Date(contract.startDate);
+        const contractEnd = contract.endDate ? new Date(contract.endDate) : null;
+
+        // Se o contrato já estava vigente neste mês
+        if (contractStart <= monthEnd && (!contractEnd || contractEnd >= monthStart)) {
+          // MRR por competência
+          mrrRecognized += contract.mrrEquivalent;
+          cogsClients += contract.operationalCost || 0;
+
+          // Fluxo de caixa
+          const monthsFromStart =
+            (targetYear - contractStart.getFullYear()) * 12 + (targetMonth - contractStart.getMonth());
+
+          if (monthsFromStart >= 0) {
+            if (contract.cycle === PlanCycle.MENSAL) {
+              cashInflow += contract.totalValue;
+            } else if (contract.cycle === PlanCycle.TRIMESTRAL) {
+              // Entrada do valor cheio no início e a cada renovação trimestral
+              if (monthsFromStart % 3 === 0) {
+                cashInflow += contract.totalValue;
+              }
+            }
+
+            // Setup cai no primeiro mês do contrato
+            if (monthsFromStart === 0 && contract.setupValue) {
+              cashInflow += contract.setupValue;
+            }
+          }
+        }
+      }
+
+      // Calcular despesas da agência
+      const expenses = {
+        team: 0,
+        tools: 0,
+        marketing: 0,
+        others: 0,
+        total: 0,
+      };
+
+      for (const exp of allExpenses) {
+        const expDate = new Date(exp.dueDate);
+        let applies = false;
+
+        if (exp.isRecurring) {
+          // Despesa recorrente vale a partir do mês de início
+          if (expDate <= monthEnd) {
+            applies = true;
+          }
+        } else {
+          // Despesa pontual vale apenas no mês correspondente
+          if (expDate >= monthStart && expDate <= monthEnd) {
+            applies = true;
+          }
+        }
+
+        if (applies) {
+          switch (exp.category) {
+            case ExpenseCategory.EQUIPE:
+              expenses.team += exp.amount;
+              break;
+            case ExpenseCategory.FERRAMENTAS_SAAS:
+              expenses.tools += exp.amount;
+              break;
+            case ExpenseCategory.MARKETING_PROPRIO:
+              expenses.marketing += exp.amount;
+              break;
+            case ExpenseCategory.OUTROS:
+            default:
+              expenses.others += exp.amount;
+              break;
+          }
+        }
+      }
+
+      expenses.total = expenses.team + expenses.tools + expenses.marketing + expenses.others;
+
+      const netProfitCompetence = mrrRecognized - cogsClients - expenses.total;
+      const netProfitCash = cashInflow - cogsClients - expenses.total;
+      const netMarginPercent =
+        mrrRecognized > 0
+          ? Number(((netProfitCompetence / mrrRecognized) * 100).toFixed(1))
+          : 0;
+
+      periods.push({
+        monthKey,
+        label,
+        revenue: {
+          mrrRecognized,
+          cashInflow,
+        },
+        cogsClients,
+        expenses,
+        netProfitCompetence,
+        netProfitCash,
+        netMarginPercent,
+      });
+
+      sumRevComp += mrrRecognized;
+      sumRevCash += cashInflow;
+      sumExpTotal += expenses.total;
+      sumProfitComp += netProfitCompetence;
+      sumProfitCash += netProfitCash;
+    }
+
+    const averageMarginPercent =
+      sumRevComp > 0 ? Number(((sumProfitComp / sumRevComp) * 100).toFixed(1)) : 0;
+
+    return {
+      periods,
+      totals: {
+        totalRevenueCompetence: sumRevComp,
+        totalRevenueCash: sumRevCash,
+        totalExpenses: sumExpTotal,
+        totalNetProfitCompetence: sumProfitComp,
+        totalNetProfitCash: sumProfitCash,
+        averageMarginPercent,
+      },
+    };
   }
 }
