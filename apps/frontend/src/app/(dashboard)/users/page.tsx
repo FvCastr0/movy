@@ -21,6 +21,8 @@ import {
   ShieldAlert,
   ArrowLeft,
   RefreshCw,
+  Phone,
+  Edit2,
 } from 'lucide-react';
 
 const ROLE_CONFIG: Record<
@@ -61,10 +63,16 @@ export default function UsersManagementPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('SDR');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
+
+  // Edição rápida de WhatsApp/Telefone
+  const [editingUser, setEditingUser] = useState<SystemUser | null>(null);
+  const [editPhone, setEditPhone] = useState('');
+  const [isUpdatingPhone, setIsUpdatingPhone] = useState(false);
 
   const loadUsers = useCallback(async (quiet = false) => {
     try {
@@ -99,6 +107,7 @@ export default function UsersManagementPage() {
       await api.post('/users', {
         name: name.trim(),
         email: email.trim(),
+        phone: phone.trim() || undefined,
         password,
         role,
       });
@@ -106,6 +115,7 @@ export default function UsersManagementPage() {
       alert(`Colaborador ${name} cadastrado com sucesso com perfil ${ROLE_CONFIG[role].label}!`);
       setName('');
       setEmail('');
+      setPhone('');
       setPassword('');
       setRole('SDR');
       setIsModalOpen(false);
@@ -114,6 +124,29 @@ export default function UsersManagementPage() {
       setModalError(err?.response?.data?.message || 'Não foi possível cadastrar o colaborador.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleOpenEditPhone = (u: SystemUser) => {
+    setEditingUser(u);
+    setEditPhone(u.phone || '');
+  };
+
+  const handleSavePhone = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    setIsUpdatingPhone(true);
+
+    try {
+      await api.patch(`/users/${editingUser.id}`, {
+        phone: editPhone.trim() || null,
+      });
+      setEditingUser(null);
+      await loadUsers(true);
+    } catch (err: any) {
+      alert(err?.response?.data?.message || 'Falha ao atualizar telefone do colaborador.');
+    } finally {
+      setIsUpdatingPhone(false);
     }
   };
 
@@ -277,6 +310,7 @@ export default function UsersManagementPage() {
                 <tr>
                   <th className="py-3 px-4 font-semibold">Nome</th>
                   <th className="py-3 px-4 font-semibold">E-mail</th>
+                  <th className="py-3 px-4 font-semibold">WhatsApp (Alertas)</th>
                   <th className="py-3 px-4 font-semibold">Papel / Função</th>
                   <th className="py-3 px-4 font-semibold">Data Cadastro</th>
                   <th className="py-3 px-4 font-semibold text-right">Ações</th>
@@ -307,6 +341,33 @@ export default function UsersManagementPage() {
                       </td>
                       <td className="py-3 px-4 text-text-muted font-mono text-[11px]">{u.email}</td>
                       <td className="py-3 px-4">
+                        {u.phone ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono">
+                              <Phone className="w-2.5 h-2.5" />
+                              {u.phone}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditPhone(u)}
+                              className="text-zinc-500 hover:text-zinc-300 p-0.5"
+                              title="Alterar WhatsApp"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditPhone(u)}
+                            className="inline-flex items-center gap-1 text-[11px] text-zinc-500 hover:text-emerald-400 hover:underline"
+                          >
+                            <Phone className="w-3 h-3" />
+                            <span>+ Adicionar WhatsApp</span>
+                          </button>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
                         <span
                           className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${roleMeta.badgeClass}`}
                         >
@@ -317,16 +378,26 @@ export default function UsersManagementPage() {
                         {new Date(u.createdAt).toLocaleDateString('pt-BR')}
                       </td>
                       <td className="py-3 px-4 text-right">
-                        {!isCurrent && (
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             type="button"
-                            onClick={() => handleDeleteUser(u)}
-                            className="p-1 text-text-muted hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
-                            title="Remover colaborador"
+                            onClick={() => handleOpenEditPhone(u)}
+                            className="p-1 text-text-muted hover:text-zinc-200 hover:bg-white/5 rounded-lg transition-colors"
+                            title="Editar telefone/dados"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Edit2 className="w-3.5 h-3.5" />
                           </button>
-                        )}
+                          {!isCurrent && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteUser(u)}
+                              className="p-1 text-text-muted hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                              title="Remover colaborador"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -405,6 +476,25 @@ export default function UsersManagementPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-text-muted mb-1">
+                  WhatsApp (Alertas & Notificações)
+                </label>
+                <div className="relative">
+                  <Phone className="w-3.5 h-3.5 text-text-muted absolute left-3 top-3" />
+                  <input
+                    type="text"
+                    placeholder="Ex: 11987654321"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 text-xs bg-surface-canvas border border-white/10 rounded-lg text-text-primary focus:border-brand focus:outline-none placeholder:text-text-muted/60"
+                  />
+                </div>
+                <p className="mt-1 text-[10px] text-text-muted">
+                  O colaborador receberá alertas imediatos via WhatsApp quando receber novas demandas.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-text-muted mb-1">
                   Senha Provisória (Mínimo 6 caracteres) <span className="text-rose-400">*</span>
                 </label>
                 <div className="relative">
@@ -455,6 +545,68 @@ export default function UsersManagementPage() {
                 >
                   <UserPlus className="w-3.5 h-3.5" />
                   <span>{isSubmitting ? 'Cadastrando...' : 'Cadastrar Colaborador'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Modal de Edição de Telefone/WhatsApp */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-surface-card p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
+                  <Phone className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-text-primary text-sm">Editar WhatsApp</h3>
+                  <p className="text-[11px] text-text-muted mt-0.5">{editingUser.name}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditingUser(null)}
+                className="p-1 text-text-muted hover:text-text-primary rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePhone} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-text-muted mb-1">
+                  Número de WhatsApp (DDD + Número)
+                </label>
+                <div className="relative">
+                  <Phone className="w-3.5 h-3.5 text-text-muted absolute left-3 top-3" />
+                  <input
+                    type="text"
+                    placeholder="Ex: 11999998888"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 text-xs bg-surface-canvas border border-white/10 rounded-lg text-text-primary focus:border-brand focus:outline-none placeholder:text-text-muted/60"
+                  />
+                </div>
+                <p className="mt-1 text-[10px] text-text-muted">
+                  Deixe em branco caso queira remover o vínculo do WhatsApp.
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  className="px-3 py-1.5 text-xs font-semibold text-text-muted bg-surface-canvas hover:bg-white/5 rounded-lg transition-colors border border-white/10"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdatingPhone}
+                  className="px-3.5 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 rounded-lg transition-colors inline-flex items-center gap-1.5 shadow-md shadow-emerald-600/20 active:scale-95"
+                >
+                  {isUpdatingPhone ? 'Salvando...' : 'Salvar WhatsApp'}
                 </button>
               </div>
             </form>

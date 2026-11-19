@@ -62,6 +62,7 @@ model User {
   id           String         @id @default(uuid())
   name         String
   email        String         @unique
+  phone        String?
   passwordHash String
   role         UserRole       @default(SDR)
   createdAt    DateTime       @default(now())
@@ -71,6 +72,9 @@ model User {
   followUps    LeadFollowUp[]
   clients      Client[]       @relation("AccountManagerClients")
   stageHistories LeadStageHistory[]
+  createdTasks   Task[]         @relation("CreatedTasks")
+  assignedTasks  Task[]         @relation("AssignedTasks")
+  notifications  Notification[]
 
   @@map("users")
 }
@@ -90,6 +94,12 @@ model Lead {
   dealValue           Float?
   meetingDate         DateTime?
   lostReason          String?
+
+  // Régua de Reuniões & Show-Rate
+  meetingReminder24hSent Boolean             @default(false)
+  meetingReminder12hSent Boolean             @default(false)
+  meetingReminder1hSent  Boolean             @default(false)
+  meetingConfirmedByLead Boolean             @default(false)
   
   // Status de notificação no grupo WhatsApp via Evolution API
   notificationStatus  NotificationStatus  @default(PENDING)
@@ -119,6 +129,7 @@ model Lead {
   followUps           LeadFollowUp[]
   stageHistories      LeadStageHistory[]
   client              Client?
+  tasks               Task[]
 
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
@@ -298,6 +309,7 @@ model Client {
   adAccountMetrics         AdAccountMetrics[]
   revenueReports           ClientRevenueReport[]
   alerts                   SystemAlert[]
+  tasks                    Task[]
 
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
@@ -444,5 +456,83 @@ model Expense {
   @@index([dueDate])
   @@map("expenses")
 }
+
+// ==============================================================================
+// GESTÃO & CONTROLE DE DEMANDAS INTERNAS (TASK ENGINE)
+// ==============================================================================
+
+enum TaskStatus {
+  PENDENTE
+  EM_ANDAMENTO
+  CONCLUIDA
+  CANCELADA
+}
+
+enum TaskPriority {
+  BAIXA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+model Task {
+  id           String        @id @default(uuid())
+  title        String
+  description  String?
+  status       TaskStatus    @default(PENDENTE)
+  priority     TaskPriority  @default(MEDIA)
+  dueDate      DateTime?
+
+  createdById  String
+  createdBy    User          @relation("CreatedTasks", fields: [createdById], references: [id], onDelete: Cascade)
+
+  assignedToId String
+  assignedTo   User          @relation("AssignedTasks", fields: [assignedToId], references: [id], onDelete: Cascade)
+
+  leadId       String?
+  lead         Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  clientId     String?
+  client       Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([assignedToId, status])
+  @@index([createdById])
+  @@index([dueDate])
+  @@map("tasks")
+}
+
+// ==============================================================================
+// CENTRAL DE NOTIFICAÇÕES & ALERTAS (NOTIFICATION CENTER)
+// ==============================================================================
+
+enum NotificationType {
+  TASK_ASSIGNED
+  TASK_DUE
+  MEETING_REMINDER
+  SYSTEM
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      NotificationType @default(SYSTEM)
+  read      Boolean          @default(false)
+  link      String?
+  metadata  Json?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+
 
 

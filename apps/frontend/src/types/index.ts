@@ -16,6 +16,7 @@ export interface SystemUser {
   id: string;
   name: string;
   email: string;
+  phone?: string | null;
   role: UserRole;
   createdAt: string;
   updatedAt?: string;
@@ -120,6 +121,10 @@ export interface Lead {
   dealValue?: number | null;
   meetingDate?: string | null;
   lostReason?: string | null;
+  meetingReminder24hSent?: boolean;
+  meetingReminder12hSent?: boolean;
+  meetingReminder1hSent?: boolean;
+  meetingConfirmedByLead?: boolean;
   stage: LeadStage;
   notificationStatus: NotificationStatus;
   notificationError?: string | null;
@@ -526,6 +531,72 @@ export interface MonthlyClosingSummary {
     averageMarginPercent: number;
   };
 }
+
+// ==============================================================================
+// GESTÃO & CONTROLE DE DEMANDAS INTERNAS (TASK ENGINE)
+// ==============================================================================
+
+export type TaskStatus = 'PENDENTE' | 'EM_ANDAMENTO' | 'CONCLUIDA' | 'CANCELADA';
+export type TaskPriority = 'BAIXA' | 'MEDIA' | 'ALTA' | 'URGENTE';
+
+export interface TaskUserRef {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  description?: string | null;
+  status: TaskStatus;
+  priority: TaskPriority;
+  dueDate?: string | null;
+  createdById: string;
+  createdBy: TaskUserRef;
+  assignedToId: string;
+  assignedTo: TaskUserRef;
+  leadId?: string | null;
+  lead?: {
+    id: string;
+    nome: string;
+    deliveryNome: string;
+  } | null;
+  clientId?: string | null;
+  client?: {
+    id: string;
+    nome: string;
+    deliveryNome: string;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ==============================================================================
+// CENTRAL DE NOTIFICAÇÕES & ALERTAS (NOTIFICATION CENTER)
+// ==============================================================================
+
+export type NotificationType = 'TASK_ASSIGNED' | 'TASK_DUE' | 'MEETING_REMINDER' | 'SYSTEM';
+
+export interface AppNotification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  type: NotificationType;
+  read: boolean;
+  link?: string | null;
+  metadata?: Record<string, any> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NotificationResponse {
+  items: AppNotification[];
+  unreadCount: number;
+}
+
 
 
 

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getCurrentUser, clearSession, AuthUser } from '@/lib/auth';
+import { NotificationBellDropdown } from './notification-bell-dropdown';
 import {
   LayoutGrid,
   Briefcase,
@@ -15,6 +16,7 @@ import {
   X,
   Sparkles,
   ShieldCheck,
+  CheckSquare,
 } from 'lucide-react';
 
 interface NavItem {
@@ -27,6 +29,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'Visão Geral', href: '/', icon: LayoutGrid, exact: true },
+  { label: 'Demandas', href: '/tasks', icon: CheckSquare },
   { label: 'CRM Comercial', href: '/crm', icon: Briefcase },
   { label: 'Clientes Ativos', href: '/clients', icon: UserCheck },
   { label: 'Financeiro', href: '/finance', icon: CircleDollarSign, adminOnly: true },
@@ -139,6 +142,12 @@ export function DynamicPillHeader() {
             {mobileMenuOpen ? <X className="h-3.5 w-3.5" /> : <Menu className="h-3.5 w-3.5" />}
           </button>
         </div>
+
+        {/* Separador vertical sutil */}
+        <div className="h-4 w-[1px] bg-white/10 mx-0.5 sm:mx-1" />
+
+        {/* Central de Notificações com Badge e Dropdown */}
+        <NotificationBellDropdown />
 
         {/* Separador vertical sutil */}
         <div className="h-4 w-[1px] bg-white/10 mx-0.5 sm:mx-1" />

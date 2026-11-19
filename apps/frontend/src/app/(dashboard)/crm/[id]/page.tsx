@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { Lead, LeadStage, LeadFollowUp } from '@/types';
 import { DashboardHeader } from '@/components/layout/dashboard-header';
+import { MeetingShowRateCard } from '@/components/crm/meeting-show-rate-card';
 import {
   ArrowLeft,
   Phone,
@@ -380,6 +381,17 @@ export default function LeadDetailPage() {
             )}
           </div>
         </div>
+
+        {/* Régua de Confirmação & Show-Rate de Reuniões */}
+        {lead.meetingDate && (
+          <MeetingShowRateCard
+            lead={lead}
+            closerName={lead.closerResponsible?.name}
+            onLeadUpdated={(updated) =>
+              setLead((prev) => (prev ? { ...prev, ...updated } : prev))
+            }
+          />
+        )}
 
         {/* Layout em 2 Colunas */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

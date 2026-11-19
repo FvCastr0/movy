@@ -1,6 +1,7 @@
 import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { UserRole } from '@prisma/client';
 
@@ -24,6 +25,7 @@ export class UsersService {
       data: {
         name: dto.name.trim(),
         email: dto.email.toLowerCase().trim(),
+        phone: dto.phone ? dto.phone.trim() : null,
         passwordHash,
         role: dto.role,
       },
@@ -31,6 +33,7 @@ export class UsersService {
         id: true,
         name: true,
         email: true,
+        phone: true,
         role: true,
         createdAt: true,
         updatedAt: true,
@@ -40,12 +43,54 @@ export class UsersService {
     return user;
   }
 
+  async update(id: string, dto: UpdateUserDto) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado.');
+    }
+
+    const data: any = {};
+    if (dto.name !== undefined) data.name = dto.name.trim();
+    if (dto.phone !== undefined) data.phone = dto.phone ? dto.phone.trim() : null;
+    if (dto.role !== undefined) data.role = dto.role;
+
+    if (dto.email !== undefined && dto.email.toLowerCase().trim() !== user.email) {
+      const existing = await this.prisma.user.findUnique({
+        where: { email: dto.email.toLowerCase().trim() },
+      });
+      if (existing) {
+        throw new ConflictException('Já existe um usuário com este e-mail.');
+      }
+      data.email = dto.email.toLowerCase().trim();
+    }
+
+    if (dto.password) {
+      const salt = await bcrypt.genSalt(10);
+      data.passwordHash = await bcrypt.hash(dto.password, salt);
+    }
+
+    return this.prisma.user.update({
+      where: { id },
+      data,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
   async findAll() {
     return this.prisma.user.findMany({
       select: {
         id: true,
         name: true,
         email: true,
+        phone: true,
         role: true,
         createdAt: true,
         updatedAt: true,
@@ -63,6 +108,7 @@ export class UsersService {
         id: true,
         name: true,
         email: true,
+        phone: true,
         role: true,
       },
       orderBy: { name: 'asc' },

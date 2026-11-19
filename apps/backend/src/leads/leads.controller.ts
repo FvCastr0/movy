@@ -1,16 +1,21 @@
-import { Controller, Post, Body, Get, Patch, Param, Query, NotFoundException, HttpCode, HttpStatus, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, Patch, Param, Query, NotFoundException, HttpCode, HttpStatus, UseGuards, Request, Req } from '@nestjs/common';
 import { LeadsService } from './leads.service';
+import { MeetingCadenceService } from './meeting-cadence.service';
 import { CaptureLeadDto } from './dto/capture-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { CreateOutboundLeadDto } from './dto/create-outbound-lead.dto';
 import { UpdateCrmStageDto } from './dto/update-crm-stage.dto';
 import { CrmMetricsQueryDto } from './dto/crm-metrics-query.dto';
+import { SendMeetingConfirmationDto } from './dto/send-meeting-confirmation.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { LeadOriginType } from '@prisma/client';
 
 @Controller('leads')
 export class LeadsController {
-  constructor(private readonly leadsService: LeadsService) {}
+  constructor(
+    private readonly leadsService: LeadsService,
+    private readonly meetingCadenceService: MeetingCadenceService,
+  ) {}
 
   // Endpoint PÚBLICO para receber leads da Landing Page
   @Post('capture')
@@ -88,5 +93,26 @@ export class LeadsController {
   @Patch(':id')
   async updateLead(@Param('id') id: string, @Body() dto: UpdateLeadDto) {
     return this.leadsService.updateLead(id, dto);
+  }
+
+  // ==============================================================================
+  // RÉGUA DE REUNIÕES & CONFIRMAÇÃO SHOW-RATE
+  // ==============================================================================
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/meeting-confirmation')
+  async sendMeetingConfirmation(
+    @Param('id') id: string,
+    @Body() dto: SendMeetingConfirmationDto,
+    @Req() req: any,
+  ) {
+    const user = req.user;
+    return this.meetingCadenceService.sendConfirmationToLead(id, dto, user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('meeting-cadence/run-check')
+  async runCadenceCheck() {
+    return this.meetingCadenceService.evaluateUpcomingMeetings();
   }
 }

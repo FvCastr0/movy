@@ -137,4 +137,53 @@ export class EvolutionService {
       return { success: false, error: friendlyError };
     }
   }
+
+  /**
+   * Envia uma mensagem de texto arbitrária diretamente para um número ou JID de WhatsApp.
+   * Utilizado para notificações de demandas, lembretes de reuniões e avisos internos.
+   */
+  async sendCustomTextMessage(
+    recipientNumberOrJid: string,
+    message: string,
+  ): Promise<{ success: boolean; error?: string }> {
+    const apiUrl = this.configService.get<string>('EVOLUTION_API_URL', 'http://localhost:8080');
+    const apiKey = this.configService.get<string>('EVOLUTION_API_KEY', 'movy_secret_key_whatsapp_2026');
+    const rawInstance = this.configService.get<string>('EVOLUTION_INSTANCE_NAME', 'bot movy');
+
+    let recipient = recipientNumberOrJid.trim();
+    if (!recipient.includes('@')) {
+      const cleanDigits = recipient.replace(/\D/g, '');
+      recipient = cleanDigits.startsWith('55') ? cleanDigits : `55${cleanDigits}`;
+    }
+
+    const instanceName = encodeURIComponent(rawInstance);
+    const endpoint = `${apiUrl}/message/sendText/${instanceName}`;
+
+    try {
+      this.logger.log(`Enviando mensagem de texto personalizada via WhatsApp para ${recipient}...`);
+
+      const response = await axios.post(
+        endpoint,
+        {
+          number: recipient,
+          text: message,
+        },
+        {
+          headers: {
+            apikey: apiKey,
+            'Content-Type': 'application/json',
+          },
+          timeout: 10000,
+        },
+      );
+
+      this.logger.log(`Mensagem de texto enviada com sucesso para ${recipient}. Status: ${response.status}`);
+      return { success: true };
+    } catch (error: any) {
+      const rawData = error.response?.data;
+      const errorMsg = rawData ? JSON.stringify(rawData) : error.message;
+      this.logger.error(`Falha no envio de texto WhatsApp para ${recipient}: ${errorMsg}`);
+      return { success: false, error: errorMsg };
+    }
+  }
 }

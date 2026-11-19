@@ -120,7 +120,10 @@ export class LeadsService {
           orderBy: { createdAt: 'desc' },
         },
         sdrResponsible: {
-          select: { id: true, name: true, email: true },
+          select: { id: true, name: true, email: true, phone: true },
+        },
+        closerResponsible: {
+          select: { id: true, name: true, email: true, phone: true },
         },
       },
     });
@@ -208,16 +211,32 @@ export class LeadsService {
 
     const stageChanged = dto.stage !== lead.stage;
 
+    // Detecta se a data da reunião foi alterada ou remarcada
+    const newMeetingDate = dto.meetingDate ? new Date(dto.meetingDate) : undefined;
+    const meetingRescheduled =
+      newMeetingDate &&
+      (!lead.meetingDate || newMeetingDate.getTime() !== new Date(lead.meetingDate).getTime());
+
     return this.prisma.$transaction(async (tx) => {
+      const updateData: any = {
+        stage: dto.stage,
+        lostReason: dto.stage === LeadStage.PERDIDO ? dto.lostReason?.trim() : undefined,
+        meetingDate: newMeetingDate,
+        dealValue: dto.dealValue !== undefined ? dto.dealValue : undefined,
+        closerResponsibleId: dto.closerResponsibleId !== undefined ? dto.closerResponsibleId : undefined,
+      };
+
+      // Se remarcou a data da reunião, reseta as flags da régua de show-rate
+      if (meetingRescheduled) {
+        updateData.meetingReminder24hSent = false;
+        updateData.meetingReminder12hSent = false;
+        updateData.meetingReminder1hSent = false;
+        updateData.meetingConfirmedByLead = false;
+      }
+
       const updatedLead = await tx.lead.update({
         where: { id },
-        data: {
-          stage: dto.stage,
-          lostReason: dto.stage === LeadStage.PERDIDO ? dto.lostReason?.trim() : undefined,
-          meetingDate: dto.meetingDate ? new Date(dto.meetingDate) : undefined,
-          dealValue: dto.dealValue !== undefined ? dto.dealValue : undefined,
-          closerResponsibleId: dto.closerResponsibleId !== undefined ? dto.closerResponsibleId : undefined,
-        },
+        data: updateData,
         include: {
           qualification: true,
           client: {

@@ -12,6 +12,8 @@ import { FinanceModule } from './finance/finance.module';
 import { OnboardingOpsModule } from './onboarding-ops/onboarding-ops.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { UsersModule } from './users/users.module';
+import { TasksModule } from './tasks/tasks.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -25,6 +27,8 @@ import { AppController } from './app.controller';
     LeadsModule,
     AuthModule,
     UsersModule,
+    TasksModule,
+    NotificationsModule,
     QualificationModule,
     ClientsModule,
     MetaAdsModule,
