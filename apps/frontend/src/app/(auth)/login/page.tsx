@@ -63,19 +63,10 @@ function LoginForm() {
     <div className="relative w-full max-w-[440px]">
       {/* Header da Marca */}
       <div className="mb-8 text-center">
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-surface-card px-3 py-1 shadow-sm mb-4">
-          <span className="flex h-2 w-2 rounded-full bg-status-success animate-pulse" />
-          <span className="text-[11px] font-semibold tracking-wider text-text-secondary uppercase">
-            MOVY Lead Engine & SDR
-          </span>
-        </div>
 
         <h1 className="text-2xl font-bold tracking-tight text-text-primary">
-          Acesso à Mesa Comercial
+          Login
         </h1>
-        <p className="mt-1.5 text-sm text-text-secondary">
-          Gestão cirúrgica de funil e qualificação oficial de delivery
-        </p>
       </div>
 
       {/* Card de Autenticação */}
@@ -90,8 +81,8 @@ function LoginForm() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Campo E-mail */}
           <div className="space-y-1.5">
-            <label 
-              htmlFor="email" 
+            <label
+              htmlFor="email"
               className="block text-xs font-semibold uppercase tracking-wider text-text-secondary"
             >
               E-mail de Operação
@@ -115,8 +106,8 @@ function LoginForm() {
           {/* Campo Senha */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label 
-                htmlFor="password" 
+              <label
+                htmlFor="password"
                 className="block text-xs font-semibold uppercase tracking-wider text-text-secondary"
               >
                 Senha de Acesso
@@ -177,7 +168,7 @@ function LoginForm() {
 
       {/* Rodapé Informativo */}
       <p className="mt-6 text-center text-xs text-text-muted">
-        Plataforma de Alta Performance MOVY &copy; 2026. Acesso restrito a assessores comerciais.
+        Assessoria direcionada a deliveries MOVY &copy; 2026. Acesso restrito a assessores comerciais.
       </p>
     </div>
   );
@@ -187,7 +178,7 @@ export default function LoginPage() {
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-surface-canvas px-4 py-12">
       {/* Grid de fundo sutil e gradiente radial de profundidade */}
-      <div 
+      <div
         className="pointer-events-none absolute inset-0 opacity-[0.03]"
         style={{
           backgroundImage: 'radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)',
