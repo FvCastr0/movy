@@ -19,7 +19,11 @@ import {
 
 interface CrmPipelineProps {
   leads: Lead[];
-  onStageChange: (leadId: string, stage: LeadStage, data?: { lostReason?: string; meetingDate?: string; dealValue?: number }) => Promise<void>;
+  onStageChange: (
+    leadId: string,
+    stage: LeadStage,
+    data?: { lostReason?: string; meetingDate?: string; dealValue?: number; closerResponsibleId?: string }
+  ) => Promise<void>;
 }
 
 interface ColumnDef {
@@ -213,11 +217,19 @@ export function CrmPipeline({ leads, onStageChange }: CrmPipelineProps) {
                         📍 {lead.cidade}
                       </p>
 
-                      {/* Reunião Agendada (Se houver) */}
+                      {/* Reunião Agendada & Closer Responsável (Se houver) */}
                       {lead.meetingDate && (
-                        <div className="mt-2 flex items-center gap-1.5 rounded bg-brand/10 px-2 py-1 text-[11px] font-semibold text-brand">
-                          <Calendar className="h-3 w-3 shrink-0" />
-                          <span>Reunião: {formatMeetingDate(lead.meetingDate)}</span>
+                        <div className="mt-2 space-y-1">
+                          <div className="flex items-center gap-1.5 rounded bg-brand/10 px-2 py-1 text-[11px] font-semibold text-brand">
+                            <Calendar className="h-3 w-3 shrink-0" />
+                            <span>Reunião: {formatMeetingDate(lead.meetingDate)}</span>
+                          </div>
+                          {lead.closerResponsible && (
+                            <div className="flex items-center gap-1 text-[10px] text-text-muted px-1">
+                              <span className="font-semibold text-text-primary">Closer:</span>
+                              <span className="truncate text-emerald-400 font-medium">{lead.closerResponsible.name.split(' ')[0]}</span>
+                            </div>
+                          )}
                         </div>
                       )}
 

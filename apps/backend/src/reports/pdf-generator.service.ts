@@ -39,12 +39,25 @@ export class PdfGeneratorService {
     const filePath = this.getReportFilePath(reportId);
     const writeStream = fs.createWriteStream(filePath);
 
+    const startDate = new Date(data.weekStartDate);
+    const endDate = new Date(data.weekEndDate);
+    const diffTime = endDate.getTime() - startDate.getTime();
+    const dias = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)));
+    const rotuloPeriodo =
+      dias === 7
+        ? '7 dias'
+        : dias === 14
+        ? '14 dias'
+        : dias === 30
+        ? '30 dias'
+        : `${dias} dias`;
+
     return new Promise((resolve, reject) => {
       const doc = new PDFDocument({
         size: 'A4',
         margin: 36,
         info: {
-          Title: `Relatório Semanal Movy - ${data.deliveryNome}`,
+          Title: `Relatório de Performance (${rotuloPeriodo}) - ${data.deliveryNome}`,
           Author: 'Movy Assessoria de Delivery',
         },
       });
@@ -63,11 +76,11 @@ export class PdfGeneratorService {
 
       doc.font('Helvetica').fontSize(9).fillColor('#A3A3A3').text('ASSESSORIA ESPECIALIZADA EM DELIVERY', 36, 58);
 
-      const startStr = new Date(data.weekStartDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
-      const endStr = new Date(data.weekEndDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+      const startStr = startDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+      const endStr = endDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
       const dataFormatada = `${startStr} a ${endStr}`;
-      doc.font('Helvetica-Bold').fontSize(10).fillColor('#E5E5E5').text(`Período: ${dataFormatada}`, 300, 42, {
-        width: doc.page.width - 336,
+      doc.font('Helvetica-Bold').fontSize(10).fillColor('#E5E5E5').text(`Período (${rotuloPeriodo}): ${dataFormatada}`, 280, 42, {
+        width: doc.page.width - 316,
         align: 'right',
       });
 

@@ -119,7 +119,7 @@ export default function CrmDashboardPage() {
   const handleStageChange = async (
     leadId: string,
     targetStage: LeadStage,
-    extraData?: { lostReason?: string; meetingDate?: string; dealValue?: number }
+    extraData?: { lostReason?: string; meetingDate?: string; dealValue?: number; closerResponsibleId?: string }
   ) => {
     const previousLeads = [...leads];
     const targetLead = leads.find((l) => l.id === leadId);
@@ -135,16 +135,23 @@ export default function CrmDashboardPage() {
             lostReason: extraData?.lostReason !== undefined ? extraData.lostReason : l.lostReason,
             meetingDate: extraData?.meetingDate !== undefined ? extraData.meetingDate : l.meetingDate,
             dealValue: extraData?.dealValue !== undefined ? extraData.dealValue : l.dealValue,
+            closerResponsibleId: extraData?.closerResponsibleId !== undefined ? extraData.closerResponsibleId : l.closerResponsibleId,
           }
           : l
       )
     );
 
     try {
-      await api.patch(`/leads/${leadId}/crm-stage`, {
+      const patchRes = await api.patch(`/leads/${leadId}/crm-stage`, {
         stage: targetStage,
         ...extraData,
       });
+
+      if (patchRes.data) {
+        setLeads((prev) =>
+          prev.map((l) => (l.id === leadId ? { ...l, ...patchRes.data } : l))
+        );
+      }
 
       // Ativa o toast flutuante para permitir desfazer
       if (targetLead && previousStage && previousStage !== targetStage) {

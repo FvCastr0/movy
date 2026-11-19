@@ -10,6 +10,17 @@ export type LeadStage =
   | 'PERDIDO'
   | 'DESQUALIFICADO';
 
+export type UserRole = 'ADMIN' | 'SDR' | 'CLOSER' | 'GESTOR';
+
+export interface SystemUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export type LeadOriginType = 'INBOUND' | 'OUTBOUND';
 
 export interface CrmMetrics {
@@ -117,6 +128,14 @@ export interface Lead {
     id: string;
     name: string;
     email: string;
+    role?: UserRole;
+  } | null;
+  closerResponsibleId?: string | null;
+  closerResponsible?: {
+    id: string;
+    name: string;
+    email: string;
+    role?: UserRole;
   } | null;
   followUps?: LeadFollowUp[];
   client?: {
@@ -189,8 +208,63 @@ export interface Client {
   metaTokenExpiresAt?: string | null;
   metaLastSyncAt?: string | null;
 
+  // Integração AI Concierge (WhatsApp Delivery)
+  aiConciergeEnabled?: boolean;
+  conciergeTenantId?: string | null;
+  conciergeDigitalMenuUrl?: string | null;
+  conciergeOwnerEmail?: string | null;
+  conciergeLastSyncedAt?: string | null;
+
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ConciergeMetricsSummary {
+  totalConversations: number;
+  avgFirstResponseMs: number;
+  menuLinkSentCount: number;
+  aiResolvedCount: number;
+  humanHandoffCount: number;
+  aiRetentionRatePercent: number;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  estimatedCostUsd: number;
+}
+
+export interface ClientConciergeSummary {
+  clientId: string;
+  enabled: boolean;
+  provisioned: boolean;
+  serviceAvailable: boolean;
+  tenantId?: string | null;
+  aiGlobalEnabled: boolean;
+  hasMetaCredentials: boolean;
+  wabaId?: string | null;
+  phoneNumberId?: string | null;
+  digitalMenuUrl?: string | null;
+  ownerEmail?: string | null;
+  lastSyncedAt?: string | null;
+  knowledgeBase?: {
+    digitalMenuUrl: string;
+    llmProvider: 'OPENAI' | 'GEMINI';
+    llmModel: string;
+    estimatedDeliveryMinutes: number;
+    estimatedPickupMinutes: number;
+  } | null;
+  metrics: ConciergeMetricsSummary | null;
+}
+
+export interface SyncClientConciergeInput {
+  enabled: boolean;
+  digitalMenuUrl?: string;
+  wabaId?: string;
+  phoneNumberId?: string;
+  metaAccessToken?: string;
+  webhookVerifyToken?: string;
+  ownerEmail?: string;
+  ownerName?: string;
+  ownerPassword?: string;
 }
 
 export type PlanCycle = 'MENSAL' | 'TRIMESTRAL';

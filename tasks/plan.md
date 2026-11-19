@@ -1,77 +1,32 @@
-# Technical Implementation Plan: CRM Event-Driven Metrics & Stage Undo
+# Implementation Plan: MOVY Delivery Attendant Portal (`delivery-attendant-portal`)
 
-## Context & Objectives
-Implementar a arquitetura baseada em eventos para o CRM Comercial do MOVY, resolvendo a perda de métricas ao mover leads entre estágios. Adicionar tabela de histórico (`LeadStageHistory`), cálculo temporal de taxas (No-Show e Agendamentos), suporte a filtros por período (Geral por padrão) e mecanismo de **Desfazer (Undo)** via Toast Flutuante na interface.
+Source spec: `SPEC-delivery-attendant-portal.md` (Capability Map: `CAPABILITY-MAP-ai-concierge.md`)
 
----
+## Overview
 
-## 1. Arquitetura de Componentes & Dependências
+Implementar o Módulo 4 (`delivery-attendant-portal`), concluindo todos os 4 módulos do `CAPABILITY-MAP-ai-concierge.md`. Este módulo entrega o Portal Web enxuto do Atendente/Dono do Delivery (`/concierge-portal` e `/concierge-portal/login` dentro de `apps/frontend`), conectado diretamente ao microserviço isolado `apps/concierge-api` (porta `3002`), com foco em **Fila de Transbordo (`HUMAN_HANDOFF`)**, **Quick-Ops do Dia** e **Base de Conhecimento (`OWNER`)**.
 
-```
-PostgreSQL / Prisma
-  └── LeadStageHistory (model com leadId, fromStage, toStage, reason, isReverted, createdAt)
-        ▲
-        ├── Backend: LeadsService (Prisma Transaction para update de estágio + gravação de histórico)
-        ├── Backend: LeadsService (undoLastStage: busca última transição ativa, marca revertida, restaura estágio anterior)
-        ├── Backend: LeadsService (getCrmMetrics: cálculo baseado em eventos históricos com filtros de data)
-        ├── Backend: LeadsController (POST /leads/:id/crm-stage/undo & GET /leads/crm-metrics?startDate=&endDate=&origemTipo=)
-        └── Backend: DashboardService (alinhamento de métricas do overview)
-              ▲
-              ├── Frontend: types/index.ts (CrmMetrics, LeadStageHistory, CrmDateRange)
-              ├── Frontend: CrmDateFilter (seletor de período Geral/Hoje/7d/Mês/Custom)
-              ├── Frontend: StageUndoToast (toast flutuante com timer de 8s e botão de desfazer)
-              ├── Frontend: CrmPipeline & crm/page.tsx (integração do Kanban com Undo e métricas dinâmicas)
-              └── Frontend: CommercialFunnelWidget & (dashboard)/page.tsx (Visão Geral com dados temporais)
-```
+## Architecture & Security Decisions
 
----
+1. **Cliente HTTP Isolado (`concierge-portal-api.ts` — OWASP A01 / A04 / A05):**
+   - Comunica-se diretamente com `NEXT_PUBLIC_CONCIERGE_API_URL` (`http://localhost:3002/api/v1`) com timeout de 8 segundos.
+   - Armazena o JWT do atendente em chave isolada (`concierge_portal_token`), separada do token interno da agência MOVY.
+   - Trata explicitamente HTTP `429 Too Many Requests` (lendo o cabeçalho `Retry-After`) e HTTP `401/403`.
+2. **Radar de Transbordo sem Recriar o WhatsApp Web:**
+   - Renderiza a fila `GET /api/v1/conversations/handoff-queue` com auto-refresh a cada 15s (apenas quando a aba do navegador está visível).
+   - Cada card exibe o motivo do transbordo, o resumo gerado pela IA, as últimas 3 mensagens (e modal opcional de histórico completo), botão **"Responder no WhatsApp"** (`https://wa.me/...` com `rel="noopener noreferrer"`) e botão **"Resolvido / Devolver para a IA"** (`PATCH /api/v1/conversations/:id/resolve`).
+3. **RBAC no Frontend + Backend (`OWNER` vs `ATTENDANT`):**
+   - Tanto `OWNER` quanto `ATTENDANT` operam a **Fila de Transbordo** e o **Painel Rápido do Dia (`Quick-Ops`)**.
+   - Apenas o `OWNER` visualiza e acessa a aba **"Base de Conhecimento & Regras da IA"** (`PUT /api/v1/knowledge-base`).
 
-## 2. Ordem de Implementação (Vertical Slices)
+## Task List
 
-### Slice 1: Database Model & Migrações Prisma
-- Atualizar `apps/backend/prisma/schema.prisma` adicionando o model `LeadStageHistory` e a relação `stageHistories` no model `Lead`.
-- Executar `npx prisma migrate dev --name add_lead_stage_history`.
-- Executar `npx prisma generate` para expor os tipos no `@prisma/client`.
+### Phase 1: Isolated Concierge Portal HTTP Client & Login Page
+- [x] Task 1: Criar `apps/frontend/src/lib/concierge-portal-api.ts` com tipagens completas, timeout de 8s, gestão isolada de sessão e tratamento de Rate Limit (`429`), e criar a tela de login `/concierge-portal/login/page.tsx`.
 
-### Slice 2: Backend Core - Histórico, Undo & Cálculo Temporal
-- Criar `CrmMetricsQueryDto` com validação de `startDate`, `endDate`, `origemTipo`.
-- Atualizar `updateCrmStage` em `leads.service.ts`:
-  - Usar `prisma.$transaction` para atualizar o lead e registrar `LeadStageHistory(fromStage, toStage, reason)`.
-- Implementar `undoLastStage(leadId)` em `leads.service.ts`:
-  - Buscar a última transição com `isReverted: false`.
-  - Marcar `isReverted: true` e `revertedAt: new Date()`.
-  - Reverter `Lead.stage` para `fromStage` (ou `NOVO`).
-- Atualizar `getCrmMetrics`:
-  - Filtrar eventos de `LeadStageHistory` por período (ou all-time se datas omitidas).
-  - Calcular `agendadosCount` (eventos `toStage = REUNIAO_AGENDADA` não revertidos).
-  - Calcular `noShowCount` (eventos `toStage = NO_SHOW` não revertidos).
-  - Computar `bookingRate` e `noShowRate` sobre as contagens de eventos.
-- Expor endpoint `POST /leads/:id/crm-stage/undo` no `leads.controller.ts`.
+### Phase 2: Attendant Handoff Radar, Quick-Ops & Owner Knowledge Base
+- [x] Task 2: Criar `/concierge-portal/page.tsx` com a Fila de Transbordo Prioritária (`HUMAN_HANDOFF`), modal de histórico da conversa, barra de Operação Rápida do Dia (`Quick-Ops`) e aba de Base de Conhecimento (`OWNER`), mais link de acesso rápido na tela do cliente da MOVY.
 
-### Slice 3: Backend Tests
-- Adicionar testes em `leads.service.spec.ts` validando:
-  - Registro de histórico a cada mudança de estágio.
-  - Comportamento de `undoLastStage` (reversão do estágio e decremento das métricas).
-  - Isolamento de eventos por filtro de data.
-
-### Slice 4: Frontend - Componente de Filtro de Data & Tipagem
-- Atualizar `apps/frontend/src/types/index.ts` com as interfaces atualizadas de métricas e tipos de filtro de período.
-- Criar componente `apps/frontend/src/components/crm/crm-date-filter.tsx` com presets (*Geral*, *Hoje*, *Últimos 7 dias*, *Este Mês*, *Mês Anterior*, *Customizado*).
-
-### Slice 5: Frontend - Toast Flutuante de Undo & Integração no Pipeline
-- Criar componente de toast flutuante `StageUndoToast` com barra de progresso (8s) e botão "Desfazer".
-- Integrar no `apps/frontend/src/app/(dashboard)/crm/page.tsx`:
-  - Ao mover card no pipeline, abrir toast com os dados da transição.
-  - Ao clicar em "Desfazer", disparar `POST /leads/:id/crm-stage/undo`, reverter a posição do card na tela e recarregar métricas.
-  - Integrar `CrmDateFilter` ao lado dos filtros existentes, enviando `startDate` e `endDate` na busca de métricas.
-
-### Slice 6: Frontend - Visão Geral do Dashboard
-- Atualizar `apps/frontend/src/app/(dashboard)/page.tsx` e `commercial-funnel-widget.tsx` para sincronizar as métricas de conversão e taxas com a nova lógica.
-
----
-
-## 3. Riscos & Mitigações
-- **Risco:** Condição de corrida ao disparar múltiplos arrastos rápidos de cards.
-  - **Mitigação:** Travar o card individual durante a requisição de transição e manter pilha simples de Undo para a última transição do usuário.
-- **Risco:** Fuso horário / UTC no filtro de datas.
-  - **Mitigação:** Tratar datas no padrão ISO 8601 início do dia (00:00:00) e fim do dia (23:59:59.999).
+### Checkpoint: Complete
+- [x] Type-check estrito (`tsc --noEmit`) limpo em `apps/frontend`, `apps/backend` e `apps/concierge-api`.
+- [x] Suíte completa de testes unitários e OWASP passando 100%.

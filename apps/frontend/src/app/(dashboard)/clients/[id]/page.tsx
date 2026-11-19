@@ -9,6 +9,7 @@ import { DashboardHeader } from '@/components/layout/dashboard-header';
 import { ClientHeaderHero } from '@/components/clients/client-header-hero';
 import { ClientGrowthChart } from '@/components/clients/client-growth-chart';
 import { MetaInsightsCard } from '@/components/meta/meta-insights-card';
+import { AiConciergeCard } from '@/components/clients/ai-concierge-card';
 import { AutomatedReportModal } from '@/components/clients/automated-report-modal';
 import { ContractModal } from '@/components/finance/contract-modal';
 import {
@@ -88,6 +89,14 @@ export default function ClientDetailPage() {
     }
   };
 
+  const calculatePeriodDays = (startStr: string | Date, endStr: string | Date) => {
+    const s = new Date(startStr);
+    const e = new Date(endStr);
+    const diffTime = e.getTime() - s.getTime();
+    if (isNaN(diffTime) || diffTime <= 0) return 1;
+    return Math.round(diffTime / (1000 * 60 * 60 * 24));
+  };
+
   const formatCurrency = (val?: number | null) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(
       val || 0
@@ -133,22 +142,25 @@ export default function ClientDetailPage() {
           onOpenAutoReportModal={() => setIsAutoReportModalOpen(true)}
         />
 
+        {/* Bloco 2.5: Painel AI Concierge WhatsApp (Sincronizado com Microserviço Isolado) */}
+        <AiConciergeCard client={client} onUpdated={loadClient} />
+
         {/* Bloco 3: Gráfico de Crescimento Semanal (SVG + Tailwind) */}
         <ClientGrowthChart
           reports={reports}
           clientName={client.deliveryNome}
         />
 
-        {/* Bloco 4: Histórico de Relatórios Semanais Emitidos */}
+        {/* Bloco 4: Histórico de Relatórios de Performance Emitidos */}
         <div className="rounded-2xl border border-white/10 bg-surface-card p-6 space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-white/10">
             <div>
               <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
                 <FileText className="w-5 h-5 text-brand" />
-                Relatórios Semanais de Tráfego & Performance
+                Relatórios de Performance & Tráfego
               </h3>
               <p className="text-xs text-text-muted mt-0.5">
-                Emitidos automaticamente via Meta Ads e enviados ao cliente em PDF.
+                Emitidos sob demanda via Meta Ads (7d, 14d, 30d ou personalizado) e enviados ao cliente em PDF.
               </p>
             </div>
 
@@ -158,7 +170,7 @@ export default function ClientDetailPage() {
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand hover:bg-brand-hover text-white rounded-xl text-xs font-bold shadow-md shadow-brand/20 active:scale-95 transition-all self-start sm:self-auto"
             >
               <Sparkles className="w-4 h-4" />
-              + Novo Relatório Automático (Meta)
+              + Novo Relatório de Performance
             </button>
           </div>
 
@@ -167,7 +179,7 @@ export default function ClientDetailPage() {
               <Clock className="w-8 h-8 text-text-muted/40 mx-auto" />
               <p className="text-xs font-semibold text-text-primary">Nenhum relatório emitido ainda</p>
               <p className="text-[11px] text-text-muted max-w-sm mx-auto">
-                Clique no botão acima para puxar os dados da semana na Meta Ads e gerar o 1º relatório em PDF com 1 clique.
+                Clique no botão acima para puxar os dados da Meta Ads e gerar o 1º relatório em PDF com 1 clique.
               </p>
             </div>
           ) : (
@@ -175,6 +187,15 @@ export default function ClientDetailPage() {
               {reports.map((report) => {
                 const startDateStr = new Date(report.weekStartDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
                 const endDateStr = new Date(report.weekEndDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+                const daysCount = calculatePeriodDays(report.weekStartDate, report.weekEndDate);
+                const periodLabel =
+                  daysCount === 7
+                    ? '7 dias'
+                    : daysCount === 14
+                    ? '14 dias'
+                    : daysCount === 30
+                    ? '30 dias (Mês)'
+                    : `${daysCount} dias`;
 
                 return (
                   <div
@@ -182,9 +203,13 @@ export default function ClientDetailPage() {
                     className="p-4 rounded-xl border border-white/5 bg-surface-canvas hover:border-white/15 transition-all flex flex-col md:flex-row md:items-center md:justify-between gap-4"
                   >
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-bold text-text-primary">
-                          Semana: {startDateStr} a {endDateStr}
+                          Período: {startDateStr} a {endDateStr}
+                        </span>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/5 text-text-muted border border-white/10">
+                          <Calendar className="w-2.5 h-2.5 text-brand" />
+                          {periodLabel}
                         </span>
                         {report.whatsappSent ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-status-success/15 text-status-success border border-status-success/30">

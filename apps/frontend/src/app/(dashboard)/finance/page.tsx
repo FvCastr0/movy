@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
 import { api } from '@/lib/api';
+import { getCurrentUser } from '@/lib/auth';
 import {
   Client,
   Contract,
@@ -26,6 +28,7 @@ import {
   FileSpreadsheet,
   Receipt,
   Users2,
+  ArrowLeft,
 } from 'lucide-react';
 
 interface BillingRowData {
@@ -34,6 +37,14 @@ interface BillingRowData {
 }
 
 export default function FinanceDashboardPage() {
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setCurrentUser(getCurrentUser());
+    setMounted(true);
+  }, []);
+
   const [metrics, setMetrics] = useState<FinanceMetrics | null>(null);
   const [items, setItems] = useState<BillingRowData[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -112,15 +123,15 @@ export default function FinanceDashboardPage() {
       prev.map((item) =>
         item.client.id === clientId
           ? {
-              ...item,
-              contract: item.contract
-                ? {
-                    ...item.contract,
-                    paymentStatus: newStatus,
-                    isAtRisk: newStatus === 'EM_DIA' ? false : item.contract.isAtRisk,
-                  }
-                : null,
-            }
+            ...item,
+            contract: item.contract
+              ? {
+                ...item.contract,
+                paymentStatus: newStatus,
+                isAtRisk: newStatus === 'EM_DIA' ? false : item.contract.isAtRisk,
+              }
+              : null,
+          }
           : item
       )
     );
@@ -150,6 +161,27 @@ export default function FinanceDashboardPage() {
     setIsContractModalOpen(true);
   };
 
+  if (mounted && currentUser && currentUser.role !== 'ADMIN') {
+    return (
+      <div className="flex min-h-[70vh] flex-col items-center justify-center p-6 text-center">
+        <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 mb-4">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        <h2 className="text-lg font-bold text-text-primary">Acesso Restrito ao Administrador</h2>
+        <p className="mt-1 text-xs text-text-muted max-w-md">
+          Os dados financeiros, contratos e despesas da MOVY são confidenciais e acessíveis exclusivamente pela liderança.
+        </p>
+        <Link
+          href="/crm"
+          className="mt-5 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand hover:bg-brand-hover text-white text-xs font-semibold shadow-md shadow-brand/20 transition-all"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Voltar para o CRM Comercial
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <>
       <main className="mx-auto max-w-7xl px-4 py-2 sm:px-6 space-y-6">
@@ -160,10 +192,6 @@ export default function FinanceDashboardPage() {
               <h1 className="text-xl font-bold tracking-tight text-text-primary">
                 Gestão Financeira & Fechamento da Agência
               </h1>
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-400">
-                <Sparkles className="h-3 w-3" />
-                DRE & Contratos
-              </span>
             </div>
             <p className="mt-0.5 text-xs text-text-muted">
               Controle unificado de entradas (contratos e MRR), saídas operacionais (equipe e softwares) e DRE comparativo
@@ -204,11 +232,10 @@ export default function FinanceDashboardPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab('EXPENSES')}
-                className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-bold transition-all ${
-                  activeTab === 'EXPENSES'
+                className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-bold transition-all ${activeTab === 'EXPENSES'
                     ? 'bg-brand text-white shadow-sm'
                     : 'text-text-muted hover:bg-white/5 hover:text-text-primary'
-                }`}
+                  }`}
               >
                 <Receipt className="h-4 w-4" />
                 <span>Despesas Operacionais ({expenses.length})</span>
@@ -217,11 +244,10 @@ export default function FinanceDashboardPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab('CONTRACTS')}
-                className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-bold transition-all ${
-                  activeTab === 'CONTRACTS'
+                className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-bold transition-all ${activeTab === 'CONTRACTS'
                     ? 'bg-brand text-white shadow-sm'
                     : 'text-text-muted hover:bg-white/5 hover:text-text-primary'
-                }`}
+                  }`}
               >
                 <Users2 className="h-4 w-4" />
                 <span>Contratos & Clientes ({items.length})</span>
@@ -230,11 +256,10 @@ export default function FinanceDashboardPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab('DRE')}
-                className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-bold transition-all ${
-                  activeTab === 'DRE'
+                className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-bold transition-all ${activeTab === 'DRE'
                     ? 'bg-brand text-white shadow-sm'
                     : 'text-text-muted hover:bg-white/5 hover:text-text-primary'
-                }`}
+                  }`}
               >
                 <FileSpreadsheet className="h-4 w-4" />
                 <span>Demonstrativo do Resultado (DRE)</span>
@@ -268,11 +293,10 @@ export default function FinanceDashboardPage() {
                   <button
                     type="button"
                     onClick={() => setStatusFilter('ALL')}
-                    className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
-                      statusFilter === 'ALL'
+                    className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${statusFilter === 'ALL'
                         ? 'bg-white/10 text-text-primary shadow-sm'
                         : 'text-text-muted hover:text-text-primary'
-                    }`}
+                      }`}
                   >
                     Todos ({items.length})
                   </button>
@@ -280,11 +304,10 @@ export default function FinanceDashboardPage() {
                   <button
                     type="button"
                     onClick={() => setStatusFilter('EM_DIA')}
-                    className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
-                      statusFilter === 'EM_DIA'
+                    className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${statusFilter === 'EM_DIA'
                         ? 'bg-emerald-500/20 text-emerald-400 shadow-sm border border-emerald-500/30'
                         : 'text-text-muted hover:text-text-primary'
-                    }`}
+                      }`}
                   >
                     Em Dia
                   </button>
@@ -292,11 +315,10 @@ export default function FinanceDashboardPage() {
                   <button
                     type="button"
                     onClick={() => setStatusFilter('PENDENTE')}
-                    className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
-                      statusFilter === 'PENDENTE'
+                    className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${statusFilter === 'PENDENTE'
                         ? 'bg-amber-500/20 text-amber-400 shadow-sm border border-amber-500/30'
                         : 'text-text-muted hover:text-text-primary'
-                    }`}
+                      }`}
                   >
                     Pendente
                   </button>
@@ -304,11 +326,10 @@ export default function FinanceDashboardPage() {
                   <button
                     type="button"
                     onClick={() => setStatusFilter('INADIMPLENTE')}
-                    className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
-                      statusFilter === 'INADIMPLENTE'
+                    className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${statusFilter === 'INADIMPLENTE'
                         ? 'bg-rose-500/20 text-rose-400 shadow-sm border border-rose-500/30'
                         : 'text-text-muted hover:text-text-primary'
-                    }`}
+                      }`}
                   >
                     Inadimplente
                   </button>
@@ -316,11 +337,10 @@ export default function FinanceDashboardPage() {
                   <button
                     type="button"
                     onClick={() => setStatusFilter('RISK')}
-                    className={`flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
-                      statusFilter === 'RISK'
+                    className={`flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${statusFilter === 'RISK'
                         ? 'bg-rose-500/30 text-rose-300 shadow-sm border border-rose-500/50'
                         : 'text-rose-400/80 hover:text-rose-400'
-                    }`}
+                      }`}
                   >
                     <ShieldAlert className="h-3 w-3" />
                     <span>Em Risco (&gt;5 dias)</span>

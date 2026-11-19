@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import { DollarSign, Users, Briefcase, TrendingUp } from 'lucide-react';
 import { DashboardOverview } from '@/types';
 
@@ -9,7 +9,7 @@ interface DashboardKpiGridProps {
   overview: DashboardOverview;
 }
 
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
@@ -20,13 +20,13 @@ const containerVariants = {
   },
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 12 },
   show: {
     opacity: 1,
     y: 0,
     transition: {
-      type: 'spring',
+      type: 'spring' as const,
       stiffness: 350,
       damping: 28,
     },

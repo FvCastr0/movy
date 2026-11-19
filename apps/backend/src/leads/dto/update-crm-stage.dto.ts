@@ -19,4 +19,8 @@ export class UpdateCrmStageDto {
   @IsNumber({}, { message: 'O valor da oportunidade deve ser numérico.' })
   @Min(0, { message: 'O valor da proposta não pode ser negativo.' })
   dealValue?: number;
+
+  @IsOptional()
+  @IsString({ message: 'O ID do Closer responsável deve ser uma string válida.' })
+  closerResponsibleId?: string;
 }

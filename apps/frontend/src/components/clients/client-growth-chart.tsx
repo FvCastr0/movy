@@ -38,15 +38,23 @@ export function ClientGrowthChart({ reports, clientName }: ClientGrowthChartProp
     return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: 'UTC' }).replace('.', '');
   };
 
+  const calculateReportDays = (start: string | Date, end: string | Date) => {
+    const s = new Date(start);
+    const e = new Date(end);
+    const diff = e.getTime() - s.getTime();
+    if (isNaN(diff) || diff <= 0) return 1;
+    return Math.round(diff / (1000 * 60 * 60 * 24));
+  };
+
   if (!reports || reports.length === 0) {
     return (
       <div className="rounded-xl border border-white/10 bg-surface-card p-6 text-center space-y-2">
         <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-brand/10 text-brand">
           <BarChart3 className="h-5 w-5" />
         </div>
-        <h4 className="text-sm font-bold text-text-primary">Evolução & Crescimento Semanal</h4>
+        <h4 className="text-sm font-bold text-text-primary">Evolução & Performance por Período</h4>
         <p className="text-xs text-text-muted max-w-md mx-auto">
-          Nenhum relatório semanal registrado ainda. Gere o primeiro relatório automático via Meta Ads para iniciar o acompanhamento gráfico de crescimento.
+          Nenhum relatório de performance registrado ainda. Gere o primeiro relatório automático via Meta Ads para iniciar o acompanhamento gráfico de crescimento.
         </p>
       </div>
     );
@@ -55,17 +63,18 @@ export function ClientGrowthChart({ reports, clientName }: ClientGrowthChartProp
   // Se houver apenas 1 relatório
   if (sortedReports.length === 1) {
     const r = sortedReports[0];
+    const singleReportDays = calculateReportDays(r.weekStartDate, r.weekEndDate);
     return (
       <div className="rounded-xl border border-white/10 bg-surface-card p-6 space-y-4">
         <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-brand" />
-            <h4 className="text-sm font-bold text-text-primary">Evolução & Crescimento Semanal</h4>
+            <h4 className="text-sm font-bold text-text-primary">Evolução & Performance por Período</h4>
           </div>
-          <span className="text-[11px] text-text-muted">1 semana registrada</span>
+          <span className="text-[11px] text-text-muted">1 relatório ({singleReportDays} dias)</span>
         </div>
         <p className="text-xs text-text-muted">
-          A curva de crescimento comparativa será exibida assim que a 2ª semana for emitida. Veja o desempenho da semana atual:
+          A curva de crescimento comparativa será exibida assim que o 2º relatório for emitido. Desempenho do período registrado:
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
           <div className="p-3 bg-surface-canvas rounded-lg border border-white/5">
@@ -141,7 +150,7 @@ export function ClientGrowthChart({ reports, clientName }: ClientGrowthChartProp
         <div>
           <h4 className="text-sm font-bold text-text-primary flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-brand" />
-            Trajetória & Crescimento Semanal do Delivery
+            Trajetória & Crescimento de Performance do Delivery
           </h4>
           <p className="text-xs text-text-muted mt-0.5">
             Evolução de Investimento Meta Ads (Barras) vs Conversas Geradas (Linha)
@@ -289,11 +298,11 @@ export function ClientGrowthChart({ reports, clientName }: ClientGrowthChartProp
           <div className="mt-2 p-3 rounded-lg border border-white/10 bg-surface-canvas text-xs flex items-center justify-between animate-fade-in">
             <div>
               <span className="font-bold text-text-primary block">
-                Semana: {formatDateLabel(points[hoveredIdx].report.weekStartDate)} a{' '}
-                {formatDateLabel(points[hoveredIdx].report.weekEndDate)}
+                Período: {formatDateLabel(points[hoveredIdx].report.weekStartDate)} a{' '}
+                {formatDateLabel(points[hoveredIdx].report.weekEndDate)} ({calculateReportDays(points[hoveredIdx].report.weekStartDate, points[hoveredIdx].report.weekEndDate)} dias)
               </span>
               <span className="text-text-muted text-[11px]">
-                {points[hoveredIdx].report.analiseGestor || 'Relatório semanal consolidado'}
+                {points[hoveredIdx].report.analiseGestor || 'Relatório de performance consolidado'}
               </span>
             </div>
 

@@ -216,6 +216,7 @@ export class LeadsService {
           lostReason: dto.stage === LeadStage.PERDIDO ? dto.lostReason?.trim() : undefined,
           meetingDate: dto.meetingDate ? new Date(dto.meetingDate) : undefined,
           dealValue: dto.dealValue !== undefined ? dto.dealValue : undefined,
+          closerResponsibleId: dto.closerResponsibleId !== undefined ? dto.closerResponsibleId : undefined,
         },
         include: {
           qualification: true,
@@ -223,7 +224,10 @@ export class LeadsService {
             select: { id: true, status: true },
           },
           sdrResponsible: {
-            select: { id: true, name: true, email: true },
+            select: { id: true, name: true, email: true, role: true },
+          },
+          closerResponsible: {
+            select: { id: true, name: true, email: true, role: true },
           },
         },
       });
@@ -324,7 +328,10 @@ export class LeadsService {
           select: { id: true, status: true },
         },
         sdrResponsible: {
-          select: { id: true, name: true, email: true },
+          select: { id: true, name: true, email: true, role: true },
+        },
+        closerResponsible: {
+          select: { id: true, name: true, email: true, role: true },
         },
       },
       orderBy: { updatedAt: 'desc' },

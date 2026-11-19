@@ -58,12 +58,8 @@ export function MonthlyComparisonChart({
         <div>
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-bold text-text-primary">
-              Comparativo Mês a Mês (MoM) — Entradas vs Saídas vs Lucro
+              Comparativo mensal
             </h3>
-            <span className="inline-flex items-center gap-1 rounded-full bg-brand/10 px-2 py-0.5 text-[11px] font-semibold text-brand">
-              <TrendingUp className="h-3 w-3" />
-              DRE Gerencial
-            </span>
           </div>
           <p className="text-xs text-text-muted mt-0.5">
             Evolução do faturamento, controle de custos e resultado líquido real da Movy
@@ -76,22 +72,20 @@ export function MonthlyComparisonChart({
             <button
               type="button"
               onClick={() => setViewMode('competence')}
-              className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
-                viewMode === 'competence'
-                  ? 'bg-white/10 text-text-primary shadow-sm'
-                  : 'text-text-muted hover:text-text-primary'
-              }`}
+              className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${viewMode === 'competence'
+                ? 'bg-white/10 text-text-primary shadow-sm'
+                : 'text-text-muted hover:text-text-primary'
+                }`}
             >
               Competência (MRR)
             </button>
             <button
               type="button"
               onClick={() => setViewMode('cash')}
-              className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
-                viewMode === 'cash'
-                  ? 'bg-white/10 text-text-primary shadow-sm'
-                  : 'text-text-muted hover:text-text-primary'
-              }`}
+              className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${viewMode === 'cash'
+                ? 'bg-white/10 text-text-primary shadow-sm'
+                : 'text-text-muted hover:text-text-primary'
+                }`}
             >
               Caixa (Entradas Reais)
             </button>
@@ -104,11 +98,10 @@ export function MonthlyComparisonChart({
                 key={m}
                 type="button"
                 onClick={() => onPeriodChange(m)}
-                className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
-                  periodMonths === m
-                    ? 'bg-brand text-white shadow-sm'
-                    : 'text-text-muted hover:text-text-primary'
-                }`}
+                className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${periodMonths === m
+                  ? 'bg-brand text-white shadow-sm'
+                  : 'text-text-muted hover:text-text-primary'
+                  }`}
               >
                 {m}M
               </button>
@@ -139,9 +132,8 @@ export function MonthlyComparisonChart({
         <div className="text-text-muted">
           Margem Líquida Média no Período:{' '}
           <strong
-            className={`font-semibold ${
-              data.totals.averageMarginPercent >= 0 ? 'text-emerald-400' : 'text-rose-400'
-            }`}
+            className={`font-semibold ${data.totals.averageMarginPercent >= 0 ? 'text-emerald-400' : 'text-rose-400'
+              }`}
           >
             {data.totals.averageMarginPercent}%
           </strong>
@@ -176,11 +168,10 @@ export function MonthlyComparisonChart({
               >
                 {/* Badge de Margem */}
                 <span
-                  className={`mb-2 text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                    period.netMarginPercent >= 0
-                      ? 'bg-emerald-500/10 text-emerald-400'
-                      : 'bg-rose-500/10 text-rose-400'
-                  }`}
+                  className={`mb-2 text-[10px] font-bold px-1.5 py-0.5 rounded ${period.netMarginPercent >= 0
+                    ? 'bg-emerald-500/10 text-emerald-400'
+                    : 'bg-rose-500/10 text-rose-400'
+                    }`}
                 >
                   {period.netMarginPercent}%
                 </span>
@@ -203,9 +194,8 @@ export function MonthlyComparisonChart({
                   <div
                     style={{ height: `${netHeight}%` }}
                     title={`Lucro Líquido: R$ ${net.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-                    className={`flex-1 rounded-t transition-all relative group/bar ${
-                      net >= 0 ? 'bg-brand hover:bg-brand/90' : 'bg-rose-600/90'
-                    }`}
+                    className={`flex-1 rounded-t transition-all relative group/bar ${net >= 0 ? 'bg-brand hover:bg-brand/90' : 'bg-rose-600/90'
+                      }`}
                   />
                 </div>
 
@@ -258,9 +248,8 @@ export function MonthlyComparisonChart({
         <div className="rounded-xl border border-white/5 bg-surface-canvas p-3">
           <span className="text-[11px] font-medium text-text-muted">Margem Líquida Média</span>
           <p
-            className={`text-sm font-bold mt-1 ${
-              data.totals.averageMarginPercent >= 0 ? 'text-emerald-400' : 'text-rose-400'
-            }`}
+            className={`text-sm font-bold mt-1 ${data.totals.averageMarginPercent >= 0 ? 'text-emerald-400' : 'text-rose-400'
+              }`}
           >
             {data.totals.averageMarginPercent}%
           </p>

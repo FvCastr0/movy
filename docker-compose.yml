@@ -7,7 +7,7 @@ services:
     image: evoapicloud/evolution-api:latest
     restart: always
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     env_file:
       - .env
     volumes:
@@ -19,14 +19,15 @@ services:
         condition: service_healthy
 
   # ==============================================================================
-  # 2. BANCO DE DADOS POSTGRESQL (evolution_db + movy_db)
+  # 2. BANCO DE DADOS POSTGRESQL (evolution_db + movy_db + movy_concierge_db)
   # ==============================================================================
   evolution-postgres:
     container_name: evolution_postgres
     image: postgres:15-alpine
     restart: always
+    # blindado: escuta apenas em 127.0.0.1 do host para nunca ficar exposto na internet (0.0.0.0)
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_DB: ${EVOLUTION_DB_NAME:-evolution_db}
       POSTGRES_USER: ${EVOLUTION_DB_USER:-evolution_user}
@@ -52,7 +53,7 @@ services:
       dockerfile: Dockerfile
     restart: always
     ports:
-      - "3001:3001"
+      - "127.0.0.1:3001:3001"
     environment:
       PORT: 3001
       DATABASE_URL: postgresql://${EVOLUTION_DB_USER:-evolution_user}:${EVOLUTION_DB_PASSWORD:-evolution_pass}@evolution-postgres:5432/movy_db?schema=public
@@ -64,7 +65,10 @@ services:
       INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:-admin@movy.com.br}
       INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-movyAdmin2026!}
       META_ACCESS_TOKEN: ${META_ACCESS_TOKEN:-}
-      FRONTEND_URL: http://localhost:3000
+      FRONTEND_URL: ${FRONTEND_URL:-https://system.assessoriamovy.com}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://assessoriamovy.com,https://www.assessoriamovy.com,https://system.assessoriamovy.com,http://localhost:3000,http://localhost:8081}
+      CONCIERGE_API_URL: http://movy-concierge-api:3002/api/v1
+      CONCIERGE_INTERNAL_API_KEY: ${CONCIERGE_INTERNAL_API_KEY:-movy_s2s_concierge_internal_secret_2026}
     depends_on:
       evolution-postgres:
         condition: service_healthy
@@ -74,7 +78,70 @@ services:
       - evolution_internal_network
 
   # ==============================================================================
-  # 4. MOVY FRONTEND (Painel Next.js App Router)
+  # 3.1 CONCIERGE REDIS (Blindado: Rede Interna + Autenticação + Comandos Perigosos Desativados)
+  # ==============================================================================
+  concierge-redis:
+    container_name: movy_concierge_redis
+    image: redis:7-alpine
+    restart: always
+    # Sem 'ports:' expostos para fora do Docker! Apenas movy-concierge-api acessa via rede interna.
+    command:
+      - "redis-server"
+      - "--appendonly"
+      - "yes"
+      - "--requirepass"
+      - "${REDIS_PASSWORD:-movy_redis_prod_shield_2026_x9K2mP8qL4vR}"
+      - "--rename-command"
+      - "FLUSHALL"
+      - ""
+      - "--rename-command"
+      - "FLUSHDB"
+      - ""
+      - "--rename-command"
+      - "CONFIG"
+      - ""
+      - "--rename-command"
+      - "EVAL"
+      - ""
+    volumes:
+      - concierge_redis_data:/data
+    networks:
+      - evolution_internal_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-movy_redis_prod_shield_2026_x9K2mP8qL4vR}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ==============================================================================
+  # 3.2 MOVY AI CONCIERGE API (Microserviço Isolado Multi-Tenant para Deliveries)
+  # ==============================================================================
+  movy-concierge-api:
+    container_name: movy_concierge_api
+    build:
+      context: ./apps/concierge-api
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "127.0.0.1:3002:3002"
+    environment:
+      PORT: 3002
+      CONCIERGE_DATABASE_URL: postgresql://${EVOLUTION_DB_USER:-evolution_user}:${EVOLUTION_DB_PASSWORD:-evolution_pass}@evolution-postgres:5432/movy_concierge_db?schema=public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-movy_redis_prod_shield_2026_x9K2mP8qL4vR}@concierge-redis:6379
+      CONCIERGE_JWT_SECRET: ${CONCIERGE_JWT_SECRET:-movy_concierge_tenant_jwt_secret_2026_hardened}
+      CONCIERGE_INTERNAL_API_KEY: ${CONCIERGE_INTERNAL_API_KEY:-movy_s2s_concierge_internal_secret_2026}
+      CONCIERGE_ENCRYPTION_KEY: ${CONCIERGE_ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://assessoriamovy.com,https://www.assessoriamovy.com,https://system.assessoriamovy.com,http://localhost:3000,http://localhost:3003}
+    depends_on:
+      evolution-postgres:
+        condition: service_healthy
+      concierge-redis:
+        condition: service_healthy
+    networks:
+      - evolution_internal_network
+
+  # ==============================================================================
+  # 4. MOVY FRONTEND (Painel Next.js App Router - system.assessoriamovy.com)
   # ==============================================================================
   movy-frontend:
     container_name: movy_frontend
@@ -82,20 +149,22 @@ services:
       context: ./apps/frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:3001/api
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.assessoriamovy.com/api}
+        NEXT_PUBLIC_CONCIERGE_API_URL: ${NEXT_PUBLIC_CONCIERGE_API_URL:-https://api.assessoriamovy.com/api/v1}
     restart: always
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       PORT: 3000
       NODE_ENV: production
+      INTERNAL_API_URL: http://movy-backend:3001/api
     depends_on:
       - movy-backend
     networks:
       - evolution_internal_network
 
   # ==============================================================================
-  # 5. MOVY LANDING PAGE (Nginx Alpine - Porta 8081)
+  # 5. MOVY LANDING PAGE (Nginx Alpine - Porta 8081 - assessoriamovy.com)
   # ==============================================================================
   movy-landing-page:
     container_name: movy_landing_page
@@ -104,7 +173,7 @@ services:
       dockerfile: Dockerfile
     restart: always
     ports:
-      - "8081:80"
+      - "127.0.0.1:8081:80"
     depends_on:
       - movy-backend
     networks:
@@ -119,3 +188,5 @@ volumes:
     name: evolution_instances
   evolution_postgres_data:
     name: evolution_postgres_data
+  concierge_redis_data:
+    name: concierge_redis_data

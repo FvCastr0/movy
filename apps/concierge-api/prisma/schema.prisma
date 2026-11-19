@@ -1,0 +1,176 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("CONCIERGE_DATABASE_URL")
+}
+
+enum DeliveryUserRole {
+  OWNER
+  ATTENDANT
+}
+
+enum LlmProvider {
+  OPENAI
+  GEMINI
+}
+
+enum ConversationStatus {
+  AI_ACTIVE
+  HUMAN_HANDOFF
+  RESOLVED
+}
+
+enum MessageSenderType {
+  CUSTOMER
+  AI_AGENT
+  HUMAN_ATTENDANT
+}
+
+model DeliveryTenant {
+  id                 String               @id @default(uuid())
+  movyClientId       String               @unique
+  name               String
+  segment            String
+  city               String
+  whatsappPhone      String
+  isActive           Boolean              @default(true)
+  aiGlobalEnabled    Boolean              @default(true)
+
+  // Meta WhatsApp Coexistence (Cloud API) Configuration
+  wabaId             String?
+  phoneNumberId      String?              @unique
+  metaAccessTokenEnc String?              // AES-256-GCM encrypted (iv:authTag:ciphertext)
+  webhookVerifyToken String?
+
+  users              DeliveryUser[]
+  knowledgeBase      TenantKnowledgeBase?
+  dailyMetrics       TenantDailyMetric[]
+  conversations      Conversation[]
+
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  @@index([movyClientId])
+  @@index([isActive])
+  @@map("delivery_tenants")
+}
+
+model DeliveryUser {
+  id           String           @id @default(uuid())
+  tenantId     String
+  tenant       DeliveryTenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name         String
+  email        String           @unique
+  passwordHash String
+  role         DeliveryUserRole @default(ATTENDANT)
+  isActive     Boolean          @default(true)
+
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([tenantId, isActive])
+  @@map("delivery_users")
+}
+
+model TenantKnowledgeBase {
+  id                       String         @id @default(uuid())
+  tenantId                 String         @unique
+  tenant                   DeliveryTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Operação & Cardápio Digital
+  digitalMenuUrl           String         @default("https://cardapio.exemplo.com.br")
+  openingHoursText         String         @default("Terça a Domingo, das 18h às 23h30")
+  estimatedDeliveryMinutes Int            @default(45)
+  estimatedPickupMinutes   Int            @default(25)
+  deliveryFeeRules         String         @default("Consulte a taxa exata por bairro diretamente no link do nosso cardápio digital.")
+  paymentMethods           String         @default("Pix, Cartão de Crédito/Débito na entrega e Dinheiro")
+
+  // Configuração da IA Econômica e Humanizada
+  agentName                String         @default("Atendente Virtual")
+  toneOfVoice              String         @default("Natural, simpático, humano e direto como no WhatsApp. Mensagens curtas, sem parecer robô corporativo.")
+  llmProvider              LlmProvider    @default(OPENAI)
+  llmModel                 String         @default("gpt-4o-mini")
+  customInstructions       String?
+  handoffTriggers          String         @default("Reclamação de atraso ou erro no pedido, solicitação de reembolso, cliente irritado, dúvida não coberta pela base ou pedido explícito para falar com atendente humano.")
+
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
+
+  @@map("tenant_knowledge_bases")
+}
+
+model TenantDailyMetric {
+  id                 String         @id @default(uuid())
+  tenantId           String
+  tenant             DeliveryTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  date               DateTime       @db.Date
+  totalConversations Int            @default(0)
+  aiResolvedCount    Int            @default(0)
+  humanHandoffCount  Int            @default(0)
+  menuLinkSentCount  Int            @default(0)
+  avgFirstResponseMs Int            @default(0)
+  promptTokens       Int            @default(0)
+  completionTokens   Int            @default(0)
+  estimatedCostUsd   Float          @default(0.0)
+
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@unique([tenantId, date])
+  @@index([tenantId, date])
+  @@map("tenant_daily_metrics")
+}
+
+model Conversation {
+  id                    String                @id @default(uuid())
+  tenantId              String
+  tenant                DeliveryTenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  customerPhone         String
+  customerName          String?
+  status                ConversationStatus    @default(AI_ACTIVE)
+
+  handoffReason         String?
+  handoffSummary        String?
+  handoffTriggeredAt    DateTime?
+
+  menuLinkSent          Boolean               @default(false)
+  firstResponseMs       Int?
+  lastCustomerMessageAt DateTime?
+  lastMessageAt         DateTime              @default(now())
+
+  messages              ConversationMessage[]
+
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  @@unique([tenantId, customerPhone])
+  @@index([tenantId, status, lastMessageAt])
+  @@map("conversations")
+}
+
+model ConversationMessage {
+  id               String            @id @default(uuid())
+  conversationId   String
+  conversation     Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  tenantId         String
+
+  metaMessageId    String?           @unique
+  senderType       MessageSenderType
+  content          String
+
+  promptTokens     Int               @default(0)
+  completionTokens Int               @default(0)
+  estimatedCostUsd Float             @default(0.0)
+
+  createdAt        DateTime          @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([tenantId, createdAt])
+  @@map("conversation_messages")
+}

@@ -1,8 +1,10 @@
+export type UserRole = 'ADMIN' | 'SDR' | 'CLOSER' | 'GESTOR';
+
 export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  role: 'ADMIN' | 'SDR';
+  role: UserRole;
 }
 
 const TOKEN_KEY = 'movy_token';

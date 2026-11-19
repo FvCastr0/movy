@@ -8,9 +8,11 @@ RUN npm ci
 
 COPY . .
 
-# Argumento e variável de ambiente para compilação estática do client Next.js
+# Argumentos e variáveis de ambiente para compilação estática do client Next.js
 ARG NEXT_PUBLIC_API_URL=http://localhost:3001/api
+ARG NEXT_PUBLIC_CONCIERGE_API_URL=http://localhost:3002/api/v1
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_CONCIERGE_API_URL=$NEXT_PUBLIC_CONCIERGE_API_URL
 
 RUN npm run build
 

@@ -22,13 +22,15 @@ interface NavItem {
   href: string;
   icon: React.ElementType;
   exact?: boolean;
+  adminOnly?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'Visão Geral', href: '/', icon: LayoutGrid, exact: true },
   { label: 'CRM Comercial', href: '/crm', icon: Briefcase },
   { label: 'Clientes Ativos', href: '/clients', icon: UserCheck },
-  { label: 'Financeiro', href: '/finance', icon: CircleDollarSign },
+  { label: 'Financeiro', href: '/finance', icon: CircleDollarSign, adminOnly: true },
+  { label: 'Usuários', href: '/users', icon: ShieldCheck, adminOnly: true },
 ];
 
 export function DynamicPillHeader() {
@@ -60,7 +62,14 @@ export function DynamicPillHeader() {
     return pathname.startsWith(item.href);
   };
 
-  const activeItem = NAV_ITEMS.find((item) => isRouteActive(item)) || NAV_ITEMS[0];
+  const visibleNavItems = NAV_ITEMS.filter(
+    (item) => !item.adminOnly || user?.role === 'ADMIN'
+  );
+
+  const activeItem =
+    visibleNavItems.find((item) => isRouteActive(item)) ||
+    visibleNavItems[0] ||
+    NAV_ITEMS[0];
 
   return (
     <header className="fixed top-4 inset-x-0 mx-auto w-fit max-w-[95vw] z-50">
@@ -83,7 +92,7 @@ export function DynamicPillHeader() {
 
         {/* Links Desktop com Sliding Active Pill */}
         <div className="hidden md:flex items-center gap-1">
-          {NAV_ITEMS.map((item) => {
+          {visibleNavItems.map((item) => {
             const active = isRouteActive(item);
             const Icon = item.icon;
 
@@ -168,7 +177,7 @@ export function DynamicPillHeader() {
             className="md:hidden mt-2 w-64 mx-auto rounded-2xl bg-zinc-950/95 backdrop-blur-2xl border border-white/10 p-2 shadow-2xl shadow-black/80"
           >
             <div className="space-y-1">
-              {NAV_ITEMS.map((item) => {
+              {visibleNavItems.map((item) => {
                 const active = isRouteActive(item);
                 const Icon = item.icon;
 

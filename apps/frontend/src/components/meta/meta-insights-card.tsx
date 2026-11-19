@@ -72,8 +72,7 @@ export function MetaInsightsCard({
         // 2. Busca métricas gerais da conta
         const { since, until } = getDateRange(selectedRange);
         const insightsRes = await api.get<MetaAccountInsights>(
-          `/meta-ads/clients/${clientId}/insights?since=${since}&until=${until}${
-            forceRefresh ? '&force=true' : ''
+          `/meta-ads/clients/${clientId}/insights?since=${since}&until=${until}${forceRefresh ? '&force=true' : ''
           }`
         );
         setInsights(insightsRes.data);
@@ -178,9 +177,6 @@ export function MetaInsightsCard({
               </span>
             )}
           </div>
-          <p className="text-xs text-text-muted mt-0.5">
-            Conta: <strong className="font-mono text-text-secondary">{statusInfo.metaAdAccountId}</strong> • Nível de Agregação Geral da Conta
-          </p>
         </div>
 
         {/* Controles de Período & Ações */}
@@ -189,31 +185,28 @@ export function MetaInsightsCard({
           <div className="flex items-center rounded-lg border border-white/10 bg-surface-canvas p-0.5 text-xs">
             <button
               onClick={() => setSelectedRange('7d')}
-              className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
-                selectedRange === '7d'
+              className={`px-2.5 py-1 rounded-md font-semibold transition-all ${selectedRange === '7d'
                   ? 'bg-brand text-white shadow-sm'
                   : 'text-text-muted hover:text-text-primary'
-              }`}
+                }`}
             >
               7 dias
             </button>
             <button
               onClick={() => setSelectedRange('14d')}
-              className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
-                selectedRange === '14d'
+              className={`px-2.5 py-1 rounded-md font-semibold transition-all ${selectedRange === '14d'
                   ? 'bg-brand text-white shadow-sm'
                   : 'text-text-muted hover:text-text-primary'
-              }`}
+                }`}
             >
               14 dias
             </button>
             <button
               onClick={() => setSelectedRange('30d')}
-              className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
-                selectedRange === '30d'
+              className={`px-2.5 py-1 rounded-md font-semibold transition-all ${selectedRange === '30d'
                   ? 'bg-brand text-white shadow-sm'
                   : 'text-text-muted hover:text-text-primary'
-              }`}
+                }`}
             >
               30 dias
             </button>

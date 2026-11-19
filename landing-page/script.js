@@ -97,7 +97,15 @@ function initLeadForm() {
   const formWrapper = document.querySelector('.form-wrapper');
   if (!form) return;
 
-  const API_ENDPOINT = 'http://localhost:3001/api/leads/capture';
+  // Roteamento inteligente de ambiente:
+  // - Em localhost (dev), aponta para a porta local do backend (3001)
+  // - Em produção (assessoriamovy.com), aponta para https://api.assessoriamovy.com
+  const isLocalDev =
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1';
+  const API_ENDPOINT = isLocalDev
+    ? 'http://localhost:3001/api/leads/capture'
+    : 'https://api.assessoriamovy.com/api/leads/capture';
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();

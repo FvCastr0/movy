@@ -33,5 +33,5 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 EXPOSE 3001
 
-# Aplica migrations do Prisma e inicia a API NestJS
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main.js"]
+# Sincroniza o schema do Prisma (migrações + novas colunas de db push) e inicia a API NestJS
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node dist/src/main.js"]

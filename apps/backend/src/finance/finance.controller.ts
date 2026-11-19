@@ -18,9 +18,12 @@ import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
 import { MonthlyClosingQueryDto } from './dto/monthly-closing-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { PaymentStatus, ExpenseCategory } from '@prisma/client';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { PaymentStatus, ExpenseCategory, UserRole } from '@prisma/client';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN)
 @Controller('finance')
 export class FinanceController {
   constructor(private readonly financeService: FinanceService) {}

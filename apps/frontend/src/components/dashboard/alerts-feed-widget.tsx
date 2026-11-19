@@ -58,23 +58,21 @@ export function AlertsFeedWidget({ alerts }: AlertsFeedWidgetProps) {
               return (
                 <div
                   key={al.id}
-                  className={`p-3.5 rounded-xl border transition-all ${
-                    isCritical
+                  className={`p-3.5 rounded-xl border transition-all ${isCritical
                       ? 'bg-rose-500/10 border-rose-500/30'
                       : isWarning
-                      ? 'bg-amber-500/10 border-amber-500/30'
-                      : 'bg-white/5 border-white/10'
-                  }`}
+                        ? 'bg-amber-500/10 border-amber-500/30'
+                        : 'bg-white/5 border-white/10'
+                    }`}
                 >
                   <div className="flex items-start gap-3">
                     <div
-                      className={`p-1.5 rounded-lg shrink-0 ${
-                        isCritical
+                      className={`p-1.5 rounded-lg shrink-0 ${isCritical
                           ? 'bg-rose-500/20 text-rose-400'
                           : isWarning
-                          ? 'bg-amber-500/20 text-amber-400'
-                          : 'bg-white/10 text-text-muted'
-                      }`}
+                            ? 'bg-amber-500/20 text-amber-400'
+                            : 'bg-white/10 text-text-muted'
+                        }`}
                     >
                       <CategoryIcon className="w-4 h-4" />
                     </div>
@@ -82,13 +80,12 @@ export function AlertsFeedWidget({ alerts }: AlertsFeedWidgetProps) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <h4
-                          className={`text-xs font-bold truncate ${
-                            isCritical
+                          className={`text-xs font-bold truncate ${isCritical
                               ? 'text-rose-400'
                               : isWarning
-                              ? 'text-amber-400'
-                              : 'text-text-primary'
-                          }`}
+                                ? 'text-amber-400'
+                                : 'text-text-primary'
+                            }`}
                         >
                           {al.title}
                         </h4>
@@ -96,8 +93,8 @@ export function AlertsFeedWidget({ alerts }: AlertsFeedWidgetProps) {
                           {al.category === 'balance'
                             ? 'Saldo Ads'
                             : al.category === 'contract'
-                            ? 'Contrato'
-                            : 'Relatório'}
+                              ? 'Contrato'
+                              : 'Relatório'}
                         </span>
                       </div>
 
@@ -123,11 +120,6 @@ export function AlertsFeedWidget({ alerts }: AlertsFeedWidgetProps) {
             })}
           </div>
         )}
-      </div>
-
-      <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-text-muted">
-        <span>Monitoramento contínuo</span>
-        <span className="text-text-primary font-medium">Auto-verificado</span>
       </div>
     </div>
   );

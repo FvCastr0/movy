@@ -17,32 +17,13 @@ export function AgencyMetaWidget({ agencyData }: AgencyMetaWidgetProps) {
           <div>
             <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
               <Megaphone className="w-5 h-5 text-brand" />
-              Meta Ads Agência MOVY (Captação Própria)
+              Meta Ads Agência MOVY
             </h3>
             <p className="text-xs text-text-muted mt-0.5">
               Tráfego pago institucional para captação de novos deliveries
             </p>
           </div>
 
-          <span
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${
-              agencyData.configured
-                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-            }`}
-          >
-            {agencyData.configured ? (
-              <>
-                <ShieldCheck className="w-3.5 h-3.5" />
-                Conectado (.env)
-              </>
-            ) : (
-              <>
-                <AlertCircle className="w-3.5 h-3.5" />
-                Configuração Pendente
-              </>
-            )}
-          </span>
         </div>
 
         {!agencyData.configured ? (
@@ -112,7 +93,6 @@ export function AgencyMetaWidget({ agencyData }: AgencyMetaWidgetProps) {
       </div>
 
       <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-text-muted">
-        <span>Conta: <code className="text-text-primary font-mono">{agencyData.adAccountId || 'Não configurada'}</code></span>
         <span className="text-brand font-medium">Tráfego Institucional</span>
       </div>
     </div>

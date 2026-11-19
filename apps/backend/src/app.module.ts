@@ -11,6 +11,7 @@ import { ReportsModule } from './reports/reports.module';
 import { FinanceModule } from './finance/finance.module';
 import { OnboardingOpsModule } from './onboarding-ops/onboarding-ops.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { UsersModule } from './users/users.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -23,6 +24,7 @@ import { AppController } from './app.controller';
     EvolutionModule,
     LeadsModule,
     AuthModule,
+    UsersModule,
     QualificationModule,
     ClientsModule,
     MetaAdsModule,
