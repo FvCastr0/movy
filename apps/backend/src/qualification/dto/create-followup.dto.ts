@@ -1,9 +1,13 @@
-import { IsNotEmpty, IsOptional, IsString, IsDateString } from 'class-validator';
+import { IsOptional, IsString, IsDateString } from 'class-validator';
 
 export class CreateFollowUpDto {
-  @IsString()
-  @IsNotEmpty({ message: 'As notas do follow-up são obrigatórias.' })
-  notes: string;
+  @IsOptional()
+  @IsString({ message: 'As notas do follow-up devem ser uma string.' })
+  notes?: string;
+
+  @IsOptional()
+  @IsString({ message: 'O conteúdo do follow-up deve ser uma string.' })
+  content?: string;
 
   @IsOptional()
   @IsDateString({}, { message: 'scheduledAt deve ser uma data ISO válida.' })

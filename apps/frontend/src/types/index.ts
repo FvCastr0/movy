@@ -96,14 +96,16 @@ export interface LeadQualification {
 export interface LeadFollowUp {
   id: string;
   leadId: string;
-  userId: string;
-  content: string;
-  stageAtMoment: LeadStage;
+  userId?: string | null;
+  notes: string;
+  content?: string;
+  stageAtMoment?: LeadStage;
+  scheduledAt?: string | null;
   createdAt: string;
   user?: {
     id: string;
     name: string;
-  };
+  } | null;
 }
 
 export interface Lead {

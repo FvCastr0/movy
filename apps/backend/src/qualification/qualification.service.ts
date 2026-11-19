@@ -88,6 +88,11 @@ export class QualificationService {
   }
 
   async addFollowUp(leadId: string, userId: string, dto: CreateFollowUpDto) {
+    const rawNotes = (dto.notes || dto.content || '').trim();
+    if (!rawNotes) {
+      throw new NotFoundException('As notas do follow-up não podem estar vazias.');
+    }
+
     // Verificar existência do lead
     const lead = await this.prisma.lead.findUnique({ where: { id: leadId } });
     if (!lead) {
@@ -98,7 +103,7 @@ export class QualificationService {
       data: {
         leadId,
         userId,
-        notes: dto.notes,
+        notes: rawNotes,
         scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : null,
       },
       include: {

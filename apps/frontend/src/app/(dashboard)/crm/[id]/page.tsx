@@ -272,13 +272,16 @@ export default function LeadDetailPage() {
 
     setIsSavingNote(true);
     try {
+      const noteContent = newNote.trim();
       const res = await api.post(`/leads/${leadId}/follow-ups`, {
-        content: newNote.trim(),
+        notes: noteContent,
+        content: noteContent,
       });
       setFollowUps([res.data, ...followUps]);
       setNewNote('');
-    } catch {
-      alert('Erro ao registrar histórico de follow-up.');
+    } catch (err: any) {
+      console.error('Erro ao adicionar follow-up:', err);
+      alert(err.response?.data?.message || 'Erro ao registrar histórico de follow-up.');
     } finally {
       setIsSavingNote(false);
     }
@@ -297,7 +300,7 @@ export default function LeadDetailPage() {
 
   return (
     <div className="min-h-screen bg-surface-canvas pb-16">
-      <DashboardHeader />
+      {/* <DashboardHeader /> */}
 
       <main className="mx-auto max-w-7xl px-4 pt-6 sm:px-6">
         {/* Barra Superior de Retorno & Ações Rápidas */}
@@ -320,11 +323,10 @@ export default function LeadDetailPage() {
                   {lead.segmento}
                 </span>
                 <span
-                  className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                    isOutbound
+                  className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${isOutbound
                       ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
                       : 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
-                  }`}
+                    }`}
                 >
                   {isOutbound ? 'Outbound' : 'Inbound'}
                 </span>
@@ -428,11 +430,10 @@ export default function LeadDetailPage() {
                 {gateChecks.map((check, idx) => (
                   <div
                     key={idx}
-                    className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold ${
-                      check.passed
+                    className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold ${check.passed
                         ? 'border-status-success/20 bg-status-success/5 text-status-success'
                         : 'border-status-danger/20 bg-status-danger/5 text-status-danger'
-                    }`}
+                      }`}
                   >
                     {check.passed ? (
                       <CheckCircle2 className="h-3 w-3 shrink-0" />
@@ -487,11 +488,10 @@ export default function LeadDetailPage() {
                           key={opt.score}
                           type="button"
                           onClick={() => setScores({ ...scores, [crit.key]: opt.score })}
-                          className={`rounded-lg border p-2 text-left transition-all ${
-                            currentScore === opt.score
+                          className={`rounded-lg border p-2 text-left transition-all ${currentScore === opt.score
                               ? 'border-brand bg-brand/10 text-text-primary font-bold shadow-sm'
                               : 'border-white/5 bg-surface-canvas text-text-muted hover:border-white/20 hover:text-text-secondary'
-                          }`}
+                            }`}
                         >
                           <div className="flex items-center justify-between text-xs mb-1">
                             <span>Score {opt.score}</span>
@@ -634,7 +634,9 @@ export default function LeadDetailPage() {
                         <span className="font-semibold text-text-secondary">{fu.user?.name || 'Gestor'}</span>
                         <span>{new Date(fu.createdAt).toLocaleString('pt-BR')}</span>
                       </div>
-                      <p className="text-text-primary leading-relaxed whitespace-pre-wrap">{fu.content}</p>
+                      <p className="text-text-primary leading-relaxed whitespace-pre-wrap">
+                        {fu.notes || fu.content}
+                      </p>
                     </div>
                   ))
                 )}
