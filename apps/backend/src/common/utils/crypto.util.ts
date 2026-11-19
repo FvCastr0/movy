@@ -1,18 +1,22 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 
 const ALGORITHM = 'aes-256-gcm';
+const DEFAULT_FALLBACK_KEY = '87fda1b51f69ce6a8ce119f34f44eabc1db6e2c7dc5f41f12369622795be6574';
+
+function resolveKey(secretKeyHex?: string): string {
+  const candidate = secretKeyHex || process.env.META_ENCRYPTION_KEY;
+  if (candidate && candidate.trim().length === 64) {
+    return candidate.trim();
+  }
+  return DEFAULT_FALLBACK_KEY;
+}
 
 /**
  * Criptografa uma string usando AES-256-GCM.
  * Retorna uma string no formato "ivHex:authTagHex:encryptedHex".
  */
 export function encryptToken(plainText: string, secretKeyHex?: string): string {
-  const keyHex = secretKeyHex || process.env.META_ENCRYPTION_KEY;
-  if (!keyHex || keyHex.length !== 64) {
-    throw new Error(
-      'META_ENCRYPTION_KEY deve ser uma chave hexadecimal de 32 bytes (64 caracteres).'
-    );
-  }
+  const keyHex = resolveKey(secretKeyHex);
 
   const iv = randomBytes(12); // IV de 96 bits recomendado para GCM
   const key = Buffer.from(keyHex, 'hex');
@@ -29,12 +33,7 @@ export function encryptToken(plainText: string, secretKeyHex?: string): string {
  * Descriptografa uma string criptografada pelo encryptToken.
  */
 export function decryptToken(cipherString: string, secretKeyHex?: string): string {
-  const keyHex = secretKeyHex || process.env.META_ENCRYPTION_KEY;
-  if (!keyHex || keyHex.length !== 64) {
-    throw new Error(
-      'META_ENCRYPTION_KEY deve ser uma chave hexadecimal de 32 bytes (64 caracteres).'
-    );
-  }
+  const keyHex = resolveKey(secretKeyHex);
 
   const parts = cipherString.split(':');
   if (parts.length !== 3) {

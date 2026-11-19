@@ -34,6 +34,7 @@ export class FinanceController {
   }
 
   @Get('contracts')
+  @Roles(UserRole.ADMIN, UserRole.GESTOR)
   async getContracts(
     @Query('paymentStatus') paymentStatus?: PaymentStatus,
     @Query('search') search?: string,
@@ -42,6 +43,7 @@ export class FinanceController {
   }
 
   @Put('clients/:clientId/contract')
+  @Roles(UserRole.ADMIN, UserRole.GESTOR)
   async upsertContract(
     @Param('clientId') clientId: string,
     @Body() dto: CreateContractDto,
@@ -50,6 +52,7 @@ export class FinanceController {
   }
 
   @Patch('clients/:clientId/payment-status')
+  @Roles(UserRole.ADMIN, UserRole.GESTOR)
   async updatePaymentStatus(
     @Param('clientId') clientId: string,
     @Body() dto: UpdatePaymentStatusDto,

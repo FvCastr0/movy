@@ -366,8 +366,14 @@ export class DashboardService {
     const averageRoas = roasCount > 0 ? Number((sumRoas / roasCount).toFixed(2)) : 0;
 
     // 4. Meta Ads da Própria Agência MOVY
-    const agencyAccountId = this.configService.get<string>('AGENCY_META_ACCOUNT_ID');
-    const agencyToken = this.configService.get<string>('AGENCY_META_ACCESS_TOKEN');
+    const agencyAccountId =
+      this.configService.get<string>('AGENCY_META_ACCOUNT_ID') ||
+      process.env.AGENCY_META_ACCOUNT_ID;
+    const agencyToken =
+      this.configService.get<string>('AGENCY_META_ACCESS_TOKEN') ||
+      process.env.AGENCY_META_ACCESS_TOKEN ||
+      this.configService.get<string>('META_ACCESS_TOKEN') ||
+      process.env.META_ACCESS_TOKEN;
     const isAgencyConfigured = Boolean(agencyAccountId && agencyToken);
 
     // Conta quantos leads inbound vieram da landing page ou campanhas próprias da agência

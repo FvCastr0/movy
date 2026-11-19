@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { api } from '@/lib/api';
 import { Client, Contract, PlanCycle, PlanType, PaymentStatus } from '@/types';
 import { X, FileText, Check, DollarSign, Calendar, Sparkles, AlertCircle } from 'lucide-react';
@@ -13,6 +13,7 @@ interface ContractModalProps {
 }
 
 export function ContractModal({ isOpen, client, onClose, onSuccess }: ContractModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null);
   const [cycle, setCycle] = useState<PlanCycle>('TRIMESTRAL');
   const [planType, setPlanType] = useState<PlanType>('TRIMESTRAL_REUNIAO');
   const [totalValue, setTotalValue] = useState('4500');
@@ -105,7 +106,9 @@ export function ContractModal({ isOpen, client, onClose, onSuccess }: ContractMo
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Falha ao salvar o contrato no servidor.');
+      const errMsg = err.response?.data?.message || err.message || 'Falha ao salvar o contrato no servidor.';
+      setError(Array.isArray(errMsg) ? errMsg.join(', ') : errMsg);
+      modalRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setIsSubmitting(false);
     }
@@ -113,7 +116,7 @@ export function ContractModal({ isOpen, client, onClose, onSuccess }: ContractMo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 bg-surface-card p-6 shadow-2xl">
+      <div ref={modalRef} className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 bg-surface-card p-6 shadow-2xl">
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand/15 text-brand">
@@ -353,6 +356,13 @@ export function ContractModal({ isOpen, client, onClose, onSuccess }: ContractMo
               className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-text-primary placeholder:text-text-muted focus:border-brand focus:outline-none"
             />
           </div>
+
+          {error && (
+            <div className="flex items-center gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-300">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
 
           <div className="mt-6 flex items-center justify-end gap-3 pt-3 border-t border-white/10">
             <button

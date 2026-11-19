@@ -14,6 +14,7 @@ export class ClientsService {
   async findAll() {
     return this.prisma.client.findMany({
       include: {
+        contract: true,
         accountManager: {
           select: { id: true, name: true, email: true },
         },
@@ -33,6 +34,7 @@ export class ClientsService {
     const client = await this.prisma.client.findUnique({
       where: { id },
       include: {
+        contract: true,
         accountManager: {
           select: { id: true, name: true, email: true },
         },

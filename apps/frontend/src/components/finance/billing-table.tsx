@@ -202,7 +202,7 @@ export function BillingTable({ items, onUpdatePaymentStatus, onEditContract }: B
                   <td className="px-4 py-3 text-right">
                     <button
                       type="button"
-                      onClick={() => onEditContract(client)}
+                      onClick={() => onEditContract({ ...client, contract: contract || client.contract })}
                       className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-surface-canvas px-2.5 py-1 text-[11px] font-semibold text-text-muted hover:border-white/20 hover:text-text-primary transition-all"
                     >
                       <Edit className="h-3 w-3" />
