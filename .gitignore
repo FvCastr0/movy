@@ -26,6 +26,5 @@ Thumbs.db
 *.pdf
 *.txt
 *.md
-*.txt
-*.json
 *.xlsx
+graphify-out/
