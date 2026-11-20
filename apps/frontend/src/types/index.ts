@@ -464,6 +464,21 @@ export interface DashboardOverview {
     clicks: number;
     status: 'ACTIVE' | 'NOT_CONFIGURED';
   };
+  latestWeeklyReports?: Array<{
+    id: string;
+    clientId: string;
+    clientName: string;
+    weekStartDate: string;
+    weekEndDate: string;
+    metaSpend: number;
+    metaConversas: number;
+    metaCostPerChat: number;
+    metaRoas?: number | null;
+    faturamentoTotal?: number | null;
+    whatsappSent: boolean;
+    pdfUrl?: string | null;
+    createdAt: string;
+  }>;
   recentAlerts: Array<{
     id: string;
     type: 'critical' | 'warning' | 'info';

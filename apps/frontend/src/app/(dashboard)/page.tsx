@@ -8,6 +8,7 @@ import { CommercialFunnelWidget } from '@/components/dashboard/commercial-funnel
 import { LeadInflowChart } from '@/components/dashboard/lead-inflow-chart';
 import { MetaAggregateWidget } from '@/components/dashboard/meta-aggregate-widget';
 import { AgencyMetaWidget } from '@/components/dashboard/agency-meta-widget';
+import { LatestWeeklyReportsWidget } from '@/components/dashboard/latest-weekly-reports-widget';
 import { AlertsFeedWidget } from '@/components/dashboard/alerts-feed-widget';
 import { MonthlyComparisonChart } from '@/components/finance/monthly-comparison-chart';
 import { CurrentMonthFinanceCard } from '@/components/dashboard/current-month-finance-card';
@@ -156,7 +157,10 @@ export default function AdminDashboardPage() {
             <AgencyMetaWidget agencyData={overview.agencyMeta} />
           </div>
 
-          {/* Bloco 4: Central de Alertas & Riscos Operacionais */}
+          {/* Bloco 4: Últimos Relatórios Semanais de Performance Emitidos */}
+          <LatestWeeklyReportsWidget reports={overview.latestWeeklyReports} />
+
+          {/* Bloco 5: Central de Alertas & Riscos Operacionais */}
           <AlertsFeedWidget alerts={overview.recentAlerts} />
         </>
       ) : (

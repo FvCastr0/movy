@@ -9,6 +9,22 @@ export interface LeadInflowItem {
   count: number;
 }
 
+export interface LatestWeeklyReportSummary {
+  id: string;
+  clientId: string;
+  clientName: string;
+  weekStartDate: string;
+  weekEndDate: string;
+  metaSpend: number;
+  metaConversas: number;
+  metaCostPerChat: number;
+  metaRoas?: number | null;
+  faturamentoTotal?: number | null;
+  whatsappSent: boolean;
+  pdfUrl?: string | null;
+  createdAt: string;
+}
+
 export interface DashboardOverviewResponse {
   financial: {
     totalMrr: number;
@@ -56,6 +72,7 @@ export interface DashboardOverviewResponse {
     clicks: number;
     status: 'ACTIVE' | 'NOT_CONFIGURED';
   };
+  latestWeeklyReports: LatestWeeklyReportSummary[];
   recentAlerts: Array<{
     id: string;
     type: 'critical' | 'warning' | 'info';
@@ -71,11 +88,44 @@ export interface DashboardOverviewResponse {
 @Injectable()
 export class DashboardService {
   private readonly logger = new Logger(DashboardService.name);
+  private agencyMetaCache: { data: { spend: number; impressions: number; clicks: number }; cachedAt: number } | null = null;
+  private readonly AGENCY_CACHE_TTL_MS = 15 * 60 * 1000;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
   ) {}
+
+  private async getAgencyLiveMetrics(adAccountId: string, accessToken: string) {
+    const now = Date.now();
+    if (this.agencyMetaCache && now - this.agencyMetaCache.cachedAt < this.AGENCY_CACHE_TTL_MS) {
+      return this.agencyMetaCache.data;
+    }
+
+    const cleanId = adAccountId.replace(/\r?\n|\r/g, '').trim();
+    const cleanToken = accessToken.replace(/\r?\n|\r/g, '').trim();
+    const formattedId = cleanId.startsWith('act_') ? cleanId : `act_${cleanId}`;
+    const url = `https://graph.facebook.com/v21.0/${formattedId}/insights?date_preset=this_month&fields=spend,impressions,clicks&access_token=${cleanToken}`;
+
+    try {
+      const response = await fetch(url, { headers: { Accept: 'application/json' } });
+      const data = await response.json();
+      if (data && Array.isArray(data.data) && data.data.length > 0) {
+        const item = data.data[0];
+        const result = {
+          spend: parseFloat(item.spend || '0'),
+          impressions: parseInt(item.impressions || '0', 10),
+          clicks: parseInt(item.clicks || '0', 10),
+        };
+        this.agencyMetaCache = { data: result, cachedAt: now };
+        return result;
+      }
+    } catch (err: any) {
+      this.logger.warn(`Falha na consulta live da agência Meta: ${err.message}`);
+    }
+
+    return this.agencyMetaCache?.data || { spend: 0, impressions: 0, clicks: 0 };
+  }
 
   async getOverview(
     clientPeriod: 'month' | 'all_time' = 'month',
@@ -237,7 +287,9 @@ export class DashboardService {
 
     // 3. Meta Ads dos Clientes (Mês Atual vs Desde o Início)
     const clientsWithReports = await this.prisma.client.findMany({
-      where: { status: 'ATIVO' },
+      where: {
+        status: { in: ['ATIVO', 'PAUSADO'] },
+      },
       select: {
         id: true,
         deliveryNome: true,
@@ -246,8 +298,8 @@ export class DashboardService {
         metaAccessTokenEnc: true,
         weeklyReports: {
           orderBy: { weekEndDate: 'desc' },
-          // Se for all_time, pega todos; se for mês, pega o mais recente de cada
-          take: clientPeriod === 'all_time' ? undefined : 1,
+          // Se for all_time, pega todos; se for mês, pega os mais recentes (até 4)
+          take: clientPeriod === 'all_time' ? undefined : 4,
         },
         adAccountMetrics: {
           orderBy: { date: 'desc' },
@@ -366,29 +418,72 @@ export class DashboardService {
     const averageRoas = roasCount > 0 ? Number((sumRoas / roasCount).toFixed(2)) : 0;
 
     // 4. Meta Ads da Própria Agência MOVY
-    const agencyAccountId =
+    const rawAgencyId = (
       this.configService.get<string>('AGENCY_META_ACCOUNT_ID') ||
-      process.env.AGENCY_META_ACCOUNT_ID;
-    const agencyToken =
+      process.env.AGENCY_META_ACCOUNT_ID ||
+      ''
+    ).replace(/\r?\n|\r/g, '').trim();
+
+    const rawAgencyToken = (
       this.configService.get<string>('AGENCY_META_ACCESS_TOKEN') ||
       process.env.AGENCY_META_ACCESS_TOKEN ||
       this.configService.get<string>('META_ACCESS_TOKEN') ||
-      process.env.META_ACCESS_TOKEN;
-    const isAgencyConfigured = Boolean(agencyAccountId && agencyToken);
+      process.env.META_ACCESS_TOKEN ||
+      ''
+    ).replace(/\r?\n|\r/g, '').trim();
+
+    const isAgencyConfigured = Boolean(rawAgencyId && rawAgencyToken);
+
+    let agencyMetrics = { spend: 0, impressions: 0, clicks: 0 };
+    if (isAgencyConfigured) {
+      agencyMetrics = await this.getAgencyLiveMetrics(rawAgencyId, rawAgencyToken);
+    }
 
     // Conta quantos leads inbound vieram da landing page ou campanhas próprias da agência
-    const agencyInboundLeadsCount = leads.filter((l) => (l as any).origemTipo === 'INBOUND' || (l as any).origem === 'LANDING_PAGE').length;
+    const agencyInboundLeadsCount = leads.filter(
+      (l) => (l as any).origemTipo === 'INBOUND' || (l as any).origem === 'LANDING_PAGE',
+    ).length;
 
     const agencyMeta = {
       configured: isAgencyConfigured,
-      adAccountId: agencyAccountId || null,
-      spend: isAgencyConfigured ? 1500.0 : 0.0,
+      adAccountId: rawAgencyId || null,
+      spend: agencyMetrics.spend,
       leadsGenerated: agencyInboundLeadsCount,
-      costPerLead: agencyInboundLeadsCount > 0 && isAgencyConfigured ? Number((1500.0 / agencyInboundLeadsCount).toFixed(2)) : 0.0,
-      impressions: isAgencyConfigured ? 24500 : 0,
-      clicks: isAgencyConfigured ? 780 : 0,
+      costPerLead:
+        agencyInboundLeadsCount > 0 && agencyMetrics.spend > 0
+          ? Number((agencyMetrics.spend / agencyInboundLeadsCount).toFixed(2))
+          : 0.0,
+      impressions: agencyMetrics.impressions,
+      clicks: agencyMetrics.clicks,
       status: (isAgencyConfigured ? 'ACTIVE' : 'NOT_CONFIGURED') as 'ACTIVE' | 'NOT_CONFIGURED',
     };
+
+    // 5. Últimos Relatórios Semanais de Performance Emitidos
+    const latestReports = await this.prisma.weeklyReport.findMany({
+      take: 6,
+      orderBy: { weekEndDate: 'desc' },
+      include: {
+        client: {
+          select: { id: true, deliveryNome: true },
+        },
+      },
+    });
+
+    const latestWeeklyReports: LatestWeeklyReportSummary[] = latestReports.map((r) => ({
+      id: r.id,
+      clientId: r.clientId,
+      clientName: r.client?.deliveryNome || 'Cliente',
+      weekStartDate: r.weekStartDate.toISOString(),
+      weekEndDate: r.weekEndDate.toISOString(),
+      metaSpend: r.metaSpend || 0,
+      metaConversas: r.metaConversas || 0,
+      metaCostPerChat: r.metaCostPerChat || 0,
+      metaRoas: r.metaRoas,
+      faturamentoTotal: r.faturamentoTotal,
+      whatsappSent: r.whatsappSent,
+      pdfUrl: r.pdfUrl,
+      createdAt: r.createdAt.toISOString(),
+    }));
 
     return {
       financial: {
@@ -428,6 +523,7 @@ export class DashboardService {
         sinceDate: earliestClientDate ? earliestClientDate.toISOString().split('T')[0] : null,
       },
       agencyMeta,
+      latestWeeklyReports,
       recentAlerts: alerts.sort((a, b) => (a.type === 'critical' ? -1 : 1)),
     };
   }
